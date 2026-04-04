@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 320" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fafc"/>
+      <stop offset="100%" style="stop-color:#e2e8f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="320" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- n8n Orchestration Layer -->
+  <rect x="40" y="20" width="720" height="52" rx="10" fill="#1e293b" filter="url(#shadow)"/>
+  <text x="400" y="44" text-anchor="middle" font-size="13" font-weight="700" fill="#f8fafc" letter-spacing="1">n8n ORCHESTRATION LAYER</text>
+  <text x="400" y="62" text-anchor="middle" font-size="10" fill="#94a3b8">Routes data between agents via structured JSON</text>
+
+  <!-- Connector lines -->
+  <line x1="180" y1="72" x2="180" y2="110" stroke="#64748b" stroke-width="2"/>
+  <line x1="400" y1="72" x2="400" y2="110" stroke="#64748b" stroke-width="2"/>
+  <line x1="620" y1="72" x2="620" y2="110" stroke="#64748b" stroke-width="2"/>
+
+  <!-- Architect -->
+  <rect x="60" y="110" width="240" height="190" rx="12" fill="#6366f1" filter="url(#shadow)"/>
+  <text x="180" y="145" text-anchor="middle" font-size="36">&#x1F9E0;</text>
+  <text x="180" y="175" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">ARCHITECT</text>
+  <rect x="80" y="190" width="200" height="24" rx="6" fill="rgba(255,255,255,0.15)"/>
+  <text x="180" y="207" text-anchor="middle" font-size="11" fill="#e0e7ff">Claude Sonnet 4</text>
+  <text x="180" y="235" text-anchor="middle" font-size="11" fill="#c7d2fe">Decomposes task into</text>
+  <text x="180" y="250" text-anchor="middle" font-size="11" fill="#c7d2fe">atomic steps with</text>
+  <text x="180" y="265" text-anchor="middle" font-size="11" fill="#c7d2fe">acceptance criteria.</text>
+  <rect x="100" y="278" width="160" height="18" rx="4" fill="rgba(0,0,0,0.2)"/>
+  <text x="180" y="291" text-anchor="middle" font-size="9" font-weight="600" fill="#e0e7ff">Never writes code.</text>
+
+  <!-- Executor -->
+  <rect x="320" y="110" width="240" height="190" rx="12" fill="#f97316" filter="url(#shadow)"/>
+  <text x="440" y="145" text-anchor="middle" font-size="36">&#x26A1;</text>
+  <text x="440" y="175" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">EXECUTOR</text>
+  <rect x="340" y="190" width="200" height="24" rx="6" fill="rgba(255,255,255,0.15)"/>
+  <text x="440" y="207" text-anchor="middle" font-size="11" fill="#fed7aa">Ollama / Claude Haiku 4.5</text>
+  <text x="440" y="235" text-anchor="middle" font-size="11" fill="#fed7aa">Writes production-quality</text>
+  <text x="440" y="250" text-anchor="middle" font-size="11" fill="#fed7aa">code. Follows repo</text>
+  <text x="440" y="265" text-anchor="middle" font-size="11" fill="#fed7aa">patterns and style.</text>
+  <rect x="360" y="278" width="160" height="18" rx="4" fill="rgba(0,0,0,0.2)"/>
+  <text x="440" y="291" text-anchor="middle" font-size="9" font-weight="600" fill="#fed7aa">Fixes reviewer feedback.</text>
+
+  <!-- Reviewer -->
+  <rect x="580" y="110" width="180" height="190" rx="12" fill="#22c55e" filter="url(#shadow)"/>
+  <text x="670" y="145" text-anchor="middle" font-size="36">&#x1F441;</text>
+  <text x="670" y="175" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">REVIEWER</text>
+  <rect x="600" y="190" width="140" height="24" rx="6" fill="rgba(255,255,255,0.15)"/>
+  <text x="670" y="207" text-anchor="middle" font-size="11" fill="#dcfce7">Claude Sonnet 4</text>
+  <text x="670" y="235" text-anchor="middle" font-size="11" fill="#dcfce7">PASS/FAIL verdict</text>
+  <text x="670" y="250" text-anchor="middle" font-size="11" fill="#dcfce7">against acceptance</text>
+  <text x="670" y="265" text-anchor="middle" font-size="11" fill="#dcfce7">criteria.</text>
+  <rect x="610" y="278" width="120" height="18" rx="4" fill="rgba(0,0,0,0.2)"/>
+  <text x="670" y="291" text-anchor="middle" font-size="9" font-weight="600" fill="#dcfce7">Max 3 retries.</text>
+</svg>
