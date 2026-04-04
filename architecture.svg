@@ -1,0 +1,324 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1120" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="112%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="10" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="10" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#22c55e"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="10" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#ef4444"/>
+    </marker>
+    <marker id="arrow-cyan" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="10" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#06b6d4"/>
+    </marker>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f4f8"/>
+      <stop offset="100%" style="stop-color:#e2e8f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="1120" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="700" y="44" text-anchor="middle" font-size="26" font-weight="700" fill="#1e293b">Dev Team Orchestrator</text>
+  <text x="700" y="68" text-anchor="middle" font-size="13" fill="#64748b">n8n Workflow: Architect / Executor / Reviewer / K8s Verify Pipeline via Discord</text>
+
+  <!-- ==================== PHASE 1: DISCORD INPUT ==================== -->
+  <rect x="30" y="94" width="300" height="200" rx="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="180" y="118" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e" letter-spacing="1">PHASE 1: DISCORD INPUT</text>
+
+  <rect x="60" y="136" width="240" height="48" rx="8" fill="#5865f2" filter="url(#shadow)"/>
+  <text x="180" y="165" text-anchor="middle" font-size="14" font-weight="600" fill="#fff">Discord Trigger</text>
+
+  <rect x="60" y="196" width="240" height="36" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="180" y="219" text-anchor="middle" font-size="12" fill="#475569">Filter $team / $ralph</text>
+
+  <rect x="60" y="244" width="240" height="36" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="180" y="267" text-anchor="middle" font-size="12" fill="#475569">Parse Command</text>
+
+  <line x1="180" y1="280" x2="180" y2="314" stroke="#f59e0b" stroke-width="1.5"/>
+  <rect x="80" y="314" width="200" height="32" rx="8" fill="#5865f2" opacity="0.7"/>
+  <text x="180" y="335" text-anchor="middle" font-size="11" fill="#fff">Ack in Discord</text>
+
+  <!-- ==================== PHASE 2: ARCHITECT ==================== -->
+  <rect x="370" y="94" width="340" height="260" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="540" y="118" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af" letter-spacing="1">PHASE 2: ARCHITECT (PLANNING)</text>
+
+  <rect x="400" y="138" width="140" height="44" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="470" y="157" text-anchor="middle" font-size="11" fill="#475569">Fetch Repo Tree</text>
+  <text x="470" y="172" text-anchor="middle" font-size="9" fill="#94a3b8">GitHub API</text>
+
+  <rect x="560" y="138" width="120" height="44" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="620" y="157" text-anchor="middle" font-size="11" fill="#475569">Build Context</text>
+  <text x="620" y="172" text-anchor="middle" font-size="9" fill="#94a3b8">File tree + task</text>
+
+  <line x1="540" y1="160" x2="558" y2="160" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="410" y="200" width="260" height="56" rx="10" fill="#6366f1" filter="url(#shadow)"/>
+  <text x="445" y="225" font-size="22">&#x1F9E0;</text>
+  <text x="480" y="224" font-size="15" font-weight="700" fill="#fff">Architect Agent</text>
+  <text x="540" y="244" text-anchor="middle" font-size="10" fill="#c7d2fe">Claude Sonnet 4 -- Plans + verify cmds</text>
+
+  <rect x="420" y="272" width="240" height="36" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="540" y="295" text-anchor="middle" font-size="11" fill="#475569">Parse Plan / Split Steps</text>
+
+  <rect x="420" y="320" width="240" height="28" rx="8" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1"/>
+  <text x="540" y="339" text-anchor="middle" font-size="10" fill="#4338ca">Create Branch (GitHub API)</text>
+
+  <line x1="330" y1="200" x2="368" y2="200" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ==================== PHASE 3: EXECUTOR + REVIEWER LOOP ==================== -->
+  <rect x="750" y="94" width="620" height="520" rx="12" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1060" y="118" text-anchor="middle" font-size="11" font-weight="700" fill="#166534" letter-spacing="1">PHASE 3: DEVELOPMENT LOOP (EXECUTOR / REVIEWER)</text>
+
+  <rect x="780" y="140" width="160" height="40" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1" filter="url(#shadow)"/>
+  <text x="860" y="165" text-anchor="middle" font-size="12" fill="#475569">Loop Steps (1-by-1)</text>
+
+  <rect x="780" y="200" width="160" height="40" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="860" y="224" text-anchor="middle" font-size="11" fill="#475569">Fetch Existing File</text>
+
+  <rect x="780" y="258" width="160" height="40" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="860" y="282" text-anchor="middle" font-size="11" fill="#475569">Prep for Executor</text>
+
+  <polygon points="860,320 920,350 860,380 800,350" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="860" y="354" text-anchor="middle" font-size="10" font-weight="600" fill="#854d0e">New file?</text>
+
+  <rect x="770" y="400" width="160" height="56" rx="10" fill="#f97316" filter="url(#shadow)"/>
+  <text x="796" y="425" font-size="18">&#x26A1;</text>
+  <text x="818" y="424" font-size="12" font-weight="700" fill="#fff">Executor</text>
+  <text x="850" y="444" text-anchor="middle" font-size="9" fill="#fed7aa">Ollama (deepseek-coder)</text>
+  <text x="850" y="400" text-anchor="middle" font-size="9" font-weight="600" fill="#166534">YES (create)</text>
+
+  <rect x="960" y="400" width="160" height="56" rx="10" fill="#f97316" filter="url(#shadow)"/>
+  <text x="986" y="425" font-size="18">&#x26A1;</text>
+  <text x="1008" y="424" font-size="12" font-weight="700" fill="#fff">Executor</text>
+  <text x="1040" y="444" text-anchor="middle" font-size="9" fill="#fed7aa">Claude Haiku 4.5</text>
+  <text x="1040" y="400" text-anchor="middle" font-size="9" font-weight="600" fill="#1e40af">NO (modify)</text>
+
+  <line x1="840" y1="380" x2="840" y2="398" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="920" y1="350" x2="958" y2="350" stroke="#64748b" stroke-width="1.2"/>
+  <line x1="958" y1="350" x2="958" y2="398" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="870" y="480" width="170" height="36" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="955" y="503" text-anchor="middle" font-size="11" fill="#475569">Normalize Code</text>
+
+  <line x1="850" y1="456" x2="870" y2="480" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="1040" y1="456" x2="1020" y2="480" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="1080" y="480" width="160" height="36" rx="8" fill="#e0e7ff" stroke="#a5b4fc" stroke-width="1"/>
+  <text x="1160" y="503" text-anchor="middle" font-size="11" fill="#4338ca">Commit to GitHub</text>
+
+  <line x1="1040" y1="498" x2="1078" y2="498" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="1120" y="320" width="220" height="56" rx="10" fill="#22c55e" filter="url(#shadow)"/>
+  <text x="1152" y="345" font-size="18">&#x1F441;</text>
+  <text x="1180" y="344" font-size="12" font-weight="700" fill="#fff">Reviewer Agent</text>
+  <text x="1230" y="364" text-anchor="middle" font-size="9" fill="#dcfce7">Claude Sonnet 4 -- PASS/FAIL</text>
+
+  <line x1="1240" y1="480" x2="1240" y2="378" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="1140" y="248" width="180" height="36" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="1230" y="271" text-anchor="middle" font-size="11" fill="#475569">Parse Review</text>
+
+  <line x1="1230" y1="320" x2="1230" y2="286" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <polygon points="1230,188 1290,218 1230,248 1170,218" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="1230" y="222" text-anchor="middle" font-size="9" font-weight="600" fill="#854d0e">Retry?</text>
+
+  <rect x="1098" y="140" width="120" height="40" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="1158" y="158" text-anchor="middle" font-size="10" font-weight="600" fill="#166534">PASS</text>
+  <text x="1158" y="172" text-anchor="middle" font-size="9" fill="#166534">Step Done</text>
+
+  <line x1="1170" y1="218" x2="1098" y2="180" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <path d="M1098,160 L780,160" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-green)" fill="none"/>
+
+  <rect x="1260" y="140" width="100" height="40" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="1310" y="158" text-anchor="middle" font-size="10" font-weight="600" fill="#991b1b">FAIL</text>
+  <text x="1310" y="172" text-anchor="middle" font-size="9" fill="#991b1b">Retry w/ feedback</text>
+
+  <line x1="1290" y1="218" x2="1340" y2="180" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+  <path d="M1310,140 C1310,100 860,90 860,138" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-red)" fill="none"/>
+  <text x="1080" y="88" text-anchor="middle" font-size="9" font-weight="600" fill="#991b1b">$ralph mode: up to 3 retries (shared with verification)</text>
+
+  <line x1="860" y1="180" x2="860" y2="198" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="860" y1="240" x2="860" y2="256" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="860" y1="298" x2="860" y2="318" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <line x1="710" y1="290" x2="748" y2="290" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Arrow Phase 3 Loop done to Summarize -->
+  <path d="M860,610 L860,650 L490,650 L490,686" stroke="#64748b" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrow)" fill="none"/>
+  <text x="675" y="644" text-anchor="middle" font-size="9" fill="#64748b">All steps complete</text>
+
+  <!-- ==================== PHASE 4: VERIFICATION (K8s) ==================== -->
+  <rect x="370" y="640" width="390" height="200" rx="12" fill="#ecfeff" stroke="#06b6d4" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="565" y="664" text-anchor="middle" font-size="11" font-weight="700" fill="#155e75" letter-spacing="1">PHASE 4: VERIFICATION (KUBERNETES)</text>
+
+  <!-- Summarize -->
+  <rect x="400" y="684" width="160" height="40" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1" filter="url(#shadow)"/>
+  <text x="480" y="708" text-anchor="middle" font-size="11" fill="#475569">Summarize Results</text>
+
+  <!-- Has Verification? -->
+  <polygon points="630,704 680,730 630,756 580,730" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="630" y="727" text-anchor="middle" font-size="8" font-weight="600" fill="#854d0e">Verify</text>
+  <text x="630" y="738" text-anchor="middle" font-size="8" font-weight="600" fill="#854d0e">cmds?</text>
+
+  <line x1="560" y1="704" x2="578" y2="730" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- K8s Job flow -->
+  <rect x="400" y="770" width="140" height="44" rx="8" fill="#06b6d4" filter="url(#shadow)"/>
+  <text x="470" y="790" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">Create K8s Job</text>
+  <text x="470" y="806" text-anchor="middle" font-size="8" fill="#cffafe">clone + build + test</text>
+  <text x="448" y="766" font-size="8" font-weight="600" fill="#155e75">YES</text>
+
+  <line x1="630" y1="756" x2="542" y2="770" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+
+  <rect x="560" y="770" width="100" height="44" rx="8" fill="#fff" stroke="#06b6d4" stroke-width="1"/>
+  <text x="610" y="790" text-anchor="middle" font-size="10" fill="#475569">Poll Status</text>
+  <text x="610" y="804" text-anchor="middle" font-size="8" fill="#94a3b8">Wait 15s loop</text>
+
+  <line x1="540" y1="792" x2="558" y2="792" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <rect x="680" y="770" width="60" height="44" rx="8" fill="#fff" stroke="#06b6d4" stroke-width="1"/>
+  <text x="710" y="790" text-anchor="middle" font-size="10" fill="#475569">Read</text>
+  <text x="710" y="804" text-anchor="middle" font-size="8" fill="#94a3b8">Logs</text>
+
+  <line x1="660" y1="792" x2="678" y2="792" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- k9s label -->
+  <rect x="680" y="822" width="60" height="18" rx="4" fill="#155e75"/>
+  <text x="710" y="835" text-anchor="middle" font-size="8" font-weight="600" fill="#fff">k9s</text>
+
+  <!-- ==================== PHASE 5: RESULTS ==================== -->
+  <rect x="790" y="640" width="580" height="200" rx="12" fill="#fce7f3" stroke="#ec4899" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1080" y="664" text-anchor="middle" font-size="11" font-weight="700" fill="#9d174d" letter-spacing="1">PHASE 5: RESULTS &amp; PR CREATION</text>
+
+  <!-- Verify Pass? -->
+  <polygon points="860,704 920,730 860,756 800,730" fill="#fef9c3" stroke="#eab308" stroke-width="1.5"/>
+  <text x="860" y="727" text-anchor="middle" font-size="8" font-weight="600" fill="#854d0e">Verify</text>
+  <text x="860" y="738" text-anchor="middle" font-size="8" font-weight="600" fill="#854d0e">pass?</text>
+
+  <!-- Arrow from Read Logs to Verify Pass -->
+  <line x1="740" y1="792" x2="790" y2="750" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- NO verify cmds path (skip to All Passed?) -->
+  <text x="700" y="700" font-size="8" font-weight="600" fill="#64748b">NO (skip)</text>
+  <path d="M680,730 L800,730" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)" fill="none"/>
+
+  <!-- Create PR -->
+  <rect x="960" y="690" width="160" height="44" rx="8" fill="#22c55e" filter="url(#shadow)"/>
+  <text x="1040" y="710" text-anchor="middle" font-size="12" font-weight="600" fill="#fff">Create PR</text>
+  <text x="1040" y="726" text-anchor="middle" font-size="9" fill="#dcfce7">GitHub API</text>
+  <text x="940" y="696" font-size="8" font-weight="600" fill="#166534">PASS</text>
+
+  <line x1="920" y1="730" x2="958" y2="712" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+
+  <!-- Add PR Link -->
+  <rect x="1140" y="696" width="120" height="32" rx="8" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
+  <text x="1200" y="716" text-anchor="middle" font-size="10" fill="#475569">Add PR Link</text>
+
+  <line x1="1120" y1="712" x2="1138" y2="712" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- FAIL path -->
+  <rect x="960" y="760" width="160" height="36" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
+  <text x="1040" y="782" text-anchor="middle" font-size="10" font-weight="600" fill="#991b1b">Retry or Fail Final</text>
+  <text x="940" y="768" font-size="8" font-weight="600" fill="#991b1b">FAIL</text>
+
+  <line x1="860" y1="756" x2="958" y2="778" stroke="#ef4444" stroke-width="1.2" marker-end="url(#arrow-red)"/>
+
+  <!-- Retry back to Loop Steps -->
+  <path d="M1040,796 C1040,830 860,840 860,620 C860,615 860,612 860,610" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arrow-red)" fill="none"/>
+  <text x="970" y="826" font-size="8" font-weight="600" fill="#991b1b">$ralph retry</text>
+  <text x="970" y="836" font-size="8" fill="#991b1b">w/ build errors</text>
+
+  <!-- No PR (steps failed) -->
+  <rect x="1140" y="760" width="120" height="36" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
+  <text x="1200" y="782" text-anchor="middle" font-size="9" fill="#991b1b">No PR (Failures)</text>
+
+  <line x1="1120" y1="778" x2="1138" y2="778" stroke="#ef4444" stroke-width="1.2" marker-end="url(#arrow-red)"/>
+
+  <!-- Post to Discord -->
+  <rect x="1280" y="720" width="80" height="80" rx="10" fill="#5865f2" filter="url(#shadow)"/>
+  <text x="1320" y="756" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Post to</text>
+  <text x="1320" y="770" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">Discord</text>
+
+  <line x1="1260" y1="712" x2="1278" y2="740" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <line x1="1260" y1="778" x2="1278" y2="778" stroke="#64748b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+  <!-- ==================== LEGENDS ==================== -->
+
+  <!-- Mode Legend -->
+  <rect x="30" y="380" width="300" height="110" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="180" y="404" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b">Discord Commands</text>
+
+  <rect x="50" y="416" width="260" height="30" rx="6" fill="#dbeafe"/>
+  <text x="180" y="436" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">$team &lt;task&gt; in owner/repo -- single pass</text>
+
+  <rect x="50" y="454" width="260" height="30" rx="6" fill="#fee2e2"/>
+  <text x="180" y="474" text-anchor="middle" font-size="10" font-weight="600" fill="#991b1b">$ralph &lt;task&gt; in owner/repo -- 3 retries</text>
+
+  <!-- Tech Stack Legend -->
+  <rect x="30" y="510" width="300" height="170" rx="10" fill="#fff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="180" y="534" text-anchor="middle" font-size="12" font-weight="700" fill="#1e293b">Tech Stack</text>
+
+  <circle cx="55" cy="556" r="6" fill="#6366f1"/>
+  <text x="68" y="560" font-size="10" fill="#475569"><tspan font-weight="600">Architect / Reviewer:</tspan> Claude Sonnet 4</text>
+
+  <circle cx="55" cy="578" r="6" fill="#f97316"/>
+  <text x="68" y="582" font-size="10" fill="#475569"><tspan font-weight="600">Executor (new):</tspan> Ollama deepseek-coder</text>
+
+  <circle cx="55" cy="600" r="6" fill="#f97316"/>
+  <text x="68" y="604" font-size="10" fill="#475569"><tspan font-weight="600">Executor (modify):</tspan> Claude Haiku 4.5</text>
+
+  <circle cx="55" cy="622" r="6" fill="#5865f2"/>
+  <text x="68" y="626" font-size="10" fill="#475569"><tspan font-weight="600">Input/Output:</tspan> Discord Bot</text>
+
+  <circle cx="55" cy="644" r="6" fill="#22c55e"/>
+  <text x="68" y="648" font-size="10" fill="#475569"><tspan font-weight="600">VCS:</tspan> GitHub API (branch, commit, PR)</text>
+
+  <circle cx="55" cy="666" r="6" fill="#06b6d4"/>
+  <text x="68" y="670" font-size="10" fill="#475569"><tspan font-weight="600">Verification:</tspan> Kubernetes Job (k9s)</text>
+
+  <!-- Key distinction -->
+  <rect x="30" y="700" width="300" height="64" rx="10" fill="#1e293b" filter="url(#shadow)"/>
+  <text x="180" y="724" text-anchor="middle" font-size="11" font-weight="700" fill="#f8fafc">TEXT-BASED AGENT ORCHESTRATION</text>
+  <text x="180" y="742" text-anchor="middle" font-size="9" fill="#94a3b8">Agents plan, code, review, and verify via</text>
+  <text x="180" y="754" text-anchor="middle" font-size="9" fill="#94a3b8">structured JSON -- n8n + K8s route the data</text>
+
+  <!-- ==================== PIPELINE SUMMARY (bottom) ==================== -->
+  <rect x="30" y="870" width="1340" height="70" rx="12" fill="#fff" stroke="#e2e8f0" stroke-width="1" filter="url(#shadow)"/>
+  <text x="700" y="895" text-anchor="middle" font-size="13" font-weight="700" fill="#1e293b">Full Pipeline</text>
+
+  <!-- Phase boxes -->
+  <rect x="60" y="910" width="160" height="22" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+  <text x="140" y="925" text-anchor="middle" font-size="9" font-weight="600" fill="#92400e">1. Discord Input</text>
+
+  <line x1="222" y1="921" x2="250" y2="921" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="252" y="910" width="180" height="22" rx="4" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+  <text x="342" y="925" text-anchor="middle" font-size="9" font-weight="600" fill="#1e40af">2. Architect (Plan)</text>
+
+  <line x1="434" y1="921" x2="462" y2="921" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="464" y="910" width="260" height="22" rx="4" fill="#f0fdf4" stroke="#22c55e" stroke-width="1"/>
+  <text x="594" y="925" text-anchor="middle" font-size="9" font-weight="600" fill="#166534">3. Executor / Reviewer Loop</text>
+
+  <line x1="726" y1="921" x2="754" y2="921" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="756" y="910" width="200" height="22" rx="4" fill="#ecfeff" stroke="#06b6d4" stroke-width="1"/>
+  <text x="856" y="925" text-anchor="middle" font-size="9" font-weight="600" fill="#155e75">4. K8s Verify (build/test)</text>
+
+  <line x1="958" y1="921" x2="986" y2="921" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="988" y="910" width="180" height="22" rx="4" fill="#fce7f3" stroke="#ec4899" stroke-width="1"/>
+  <text x="1078" y="925" text-anchor="middle" font-size="9" font-weight="600" fill="#9d174d">5. PR + Discord Report</text>
+
+  <!-- Retry arrow underneath -->
+  <path d="M856,934 C856,955 594,955 594,934" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-red)" fill="none"/>
+  <text x="725" y="960" text-anchor="middle" font-size="8" fill="#991b1b">$ralph: retry on review or verify failure (max 3)</text>
+</svg>
