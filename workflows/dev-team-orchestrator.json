@@ -1,196 +1,264 @@
 {
-  "name": "Dev Team Orchestrator",
+  "name": "Dev Team Orchestrator kubernetes",
   "nodes": [
     {
       "parameters": {
-        "updates": ["message"],
-        "additionalFields": {}
-      },
-      "id": "a1000000-0000-0000-0000-000000000001",
-      "name": "Discord Trigger",
-      "type": "n8n-nodes-base.discordTrigger",
-      "typeVersion": 1,
-      "position": [0, 400],
-      "credentials": {
-        "discordBotApi": {
-          "id": "REPLACE_WITH_DISCORD_BOT_CREDENTIAL_ID",
-          "name": "Discord Bot"
-        }
-      }
-    },
-    {
-      "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
           "conditions": [
             {
-              "id": "cond-team",
+              "id": "cond-dev",
               "leftValue": "={{ $json.content }}",
-              "rightValue": "$team",
-              "operator": { "type": "string", "operation": "startsWith" }
+              "rightValue": "$dev",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
             },
             {
-              "id": "cond-ralph",
+              "id": "cond-auto",
               "leftValue": "={{ $json.content }}",
-              "rightValue": "$ralph",
-              "operator": { "type": "string", "operation": "startsWith" }
+              "rightValue": "$auto",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
             }
           ],
           "combinator": "or"
-        }
+        },
+        "options": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000002",
-      "name": "Filter $team/$ralph",
+      "name": "Filter $dev/$auto",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
-      "position": [220, 400]
+      "position": [
+        224,
+        100
+      ],
+      "id": "07fb7658-d55f-436e-b0b5-37e9f3bf0383"
     },
     {
       "parameters": {
-        "jsCode": "const msg = $input.first().json;\nconst content = msg.content || '';\nconst channelId = msg.channelId || msg.channel_id;\n\nlet mode = 'team';\nlet task = content;\n\nif (content.startsWith('$ralph')) {\n  mode = 'ralph';\n  task = content.replace(/^\\$ralph\\s*/, '').trim();\n} else if (content.startsWith('$team')) {\n  mode = 'team';\n  task = content.replace(/^\\$team\\s*/, '').trim();\n}\n\n// Extract repo (owner/repo)\nconst repoMatch = task.match(/(?:in|for|on)\\s+(\\S+\\/\\S+)/i);\nconst repository = repoMatch ? repoMatch[1] : null;\nif (repoMatch) task = task.replace(repoMatch[0], '').trim();\ntask = task.replace(/^[\"']|[\"']$/g, '').trim();\n\nreturn {\n  json: {\n    mode,\n    task,\n    repository,\n    channelId,\n    author: msg.author?.username || 'unknown',\n    maxRetries: mode === 'ralph' ? 3 : 0\n  }\n};"
+        "jsCode": "const msg = $('Flatten Webhook').first().json;\nconst aiResp = $input.first().json;\nconst content = msg.content || '';\nconst channelId = msg.channelId || msg.channel_id;\n\nlet mode = 'dev';\nif (content.startsWith('$auto')) {\n  mode = 'auto';\n} else if (content.startsWith('$dev')) {\n  mode = 'dev';\n}\n\nlet task = content.replace(/^\\$(ralph|team)\\s*/i, '').trim();\nlet repository = null;\n\ntry {\n  // Agent output is in .output field\n  const aiText = aiResp.output || aiResp.text || '';\n  const jsonMatch = aiText.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    if (parsed.task) task = parsed.task;\n    if (parsed.repository) repository = parsed.repository;\n  }\n} catch (e) {\n  // Fallback to regex\n  const repoMatch = task.match(/(\\S+\\/\\S+)/);\n  if (repoMatch) {\n    repository = repoMatch[1];\n    task = task.replace(repoMatch[0], '').trim();\n  }\n}\n\nreturn {\n  json: {\n    mode,\n    task,\n    repository,\n    channelId,\n    author: msg.author?.username || 'unknown',\n    maxRetries: mode === 'auto' ? 3 : 0\n  }\n};"
       },
-      "id": "a1000000-0000-0000-0000-000000000010",
       "name": "Parse Command",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 400]
+      "position": [
+        800,
+        100
+      ],
+      "id": "a020165e-045b-43d5-909d-a7f8e2bf159b"
     },
     {
       "parameters": {
-        "content": "=🤖 **Task received** (`{{ $json.mode }}` mode)\n> {{ $json.task }}\n{{ $json.repository ? '📦 Repo: `' + $json.repository + '`' : '' }}\n\n⏳ Running Architect → Executor → Reviewer pipeline...",
-        "options": { "channelId": "={{ $json.channelId }}" }
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $json.channelId }}",
+          "mode": "id"
+        },
+        "content": "=**Task received** \u2014 `{{ $json.mode }}` mode\n**Repo:** `{{ $json.repository || 'N/A' }}`\n**Task:** {{ $json.task }}\n\n**Pipeline:** Analysis \u2192 Architect \u2192 Executor \u2192 Reviewer \u2192 Verify \u2192 PR\nStarting codebase analysis...",
+        "options": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000011",
       "name": "Ack in Discord",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
-      "position": [660, 280],
+      "position": [
+        1024,
+        96
+      ],
+      "id": "4018da7d-2a25-49f6-982c-5d6250200e36",
+      "webhookId": "6dd0b7b3-70ad-4bc0-b59e-2c414e86b18d",
       "credentials": {
         "discordBotApi": {
-          "id": "REPLACE_WITH_DISCORD_BOT_CREDENTIAL_ID",
-          "name": "Discord Bot"
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
         }
       }
     },
     {
       "parameters": {
-        "url": "=https://api.github.com/repos/{{ $('Parse Command').first().json.repository }}/git/trees/main?recursive=1",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "githubApi",
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $json.channelId || $('Parse Command').first().json.channelId }}",
+          "mode": "id"
+        },
+        "content": "={{ $json.result }}",
         "options": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000020",
+      "name": "Post Result to Discord",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        7136,
+        1304
+      ],
+      "id": "47d7d271-30e8-4c48-9fab-486824683ccc",
+      "webhookId": "7ef73bb9-0df8-4058-bb7a-bc435c535f7e",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "list",
+        "owner": "={{ $('Parse Command').first().json.repository.split('/')[0] }}",
+        "repository": "={{ $('Parse Command').first().json.repository.split('/')[1] }}"
+      },
       "name": "Fetch Repo Tree",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [660, 520],
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1024,
+        288
+      ],
+      "id": "2628b79a-03ac-4556-a130-d30182d925a3",
+      "webhookId": "80f025b8-c54e-4028-b1b8-4c8ceabfa326",
       "credentials": {
         "githubApi": {
-          "id": "REPLACE_WITH_GITHUB_CREDENTIAL_ID",
-          "name": "GitHub"
+          "id": "m8IjGnjp25dj792Z",
+          "name": "GitHub account"
         }
       },
       "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "const cmd = $('Parse Command').first().json;\nconst treeResp = $input.first().json;\n\nlet fileTree = 'Repository structure unavailable.';\nif (treeResp.tree && Array.isArray(treeResp.tree)) {\n  fileTree = treeResp.tree\n    .filter(f => f.type === 'blob')\n    .map(f => f.path)\n    .slice(0, 200)\n    .join('\\n');\n}\n\nreturn { json: { ...cmd, fileTree } };"
+        "jsCode": "const cmd = $('Parse Command').first().json;\nconst files = $input.all().map(i => i.json);\n\nlet fileTree = 'Repository structure unavailable.';\nif (files.length > 0 && files[0].path) {\n  fileTree = files.map(f => f.path).slice(0, 200).join('\\n');\n} else if (files.length > 0 && files[0].name) {\n  fileTree = files.map(f => f.name).slice(0, 200).join('\\n');\n}\n\nreturn { json: { ...cmd, fileTree } };"
       },
-      "id": "a1000000-0000-0000-0000-000000000021",
       "name": "Build Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 520]
+      "position": [
+        1248,
+        288
+      ],
+      "id": "a4311bf2-a600-4678-aebf-8210e45756b4"
     },
     {
       "parameters": {
-        "url": "https://api.anthropic.com/v1/messages",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
-            { "name": "anthropic-version", "value": "2023-06-01" },
-            { "name": "content-type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 4096,\n  \"system\": \"You are the Architect Agent. Analyze the task and produce a JSON execution plan.\\n\\nRespond with ONLY valid JSON (no markdown fences):\\n{\\n  \\\"task_summary\\\": \\\"one-line summary\\\",\\n  \\\"branch_name\\\": \\\"feature/descriptive-name\\\",\\n  \\\"steps\\\": [\\n    {\\n      \\\"step_id\\\": 1,\\n      \\\"action\\\": \\\"create|modify|delete\\\",\\n      \\\"target_file\\\": \\\"path/to/file\\\",\\n      \\\"description\\\": \\\"what and why\\\",\\n      \\\"acceptance_criteria\\\": [\\\"criterion 1\\\", \\\"criterion 2\\\"]\\n    }\\n  ],\\n  \\\"verification\\\": {\\n    \\\"commands\\\": [\\\"pytest tests/\\\", \\\"python -m mypy src/\\\"],\\n    \\\"expected_outcomes\\\": [\\\"All tests pass\\\", \\\"No type errors\\\"],\\n    \\\"image\\\": \\\"python:3.12-slim\\\"\\n  }\\n}\\n\\nRules: Never write code. One file per step. Keep steps small and verifiable. Always include verification.commands that can run in a clean clone.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Task: {{ $json.task }}\\n\\nRepository: {{ $json.repository || 'not specified' }}\\n\\nFile tree:\\n{{ $json.fileTree }}\"\n    }\n  ]\n}",
-        "options": {}
-      },
-      "id": "a1000000-0000-0000-0000-000000000030",
-      "name": "🧠 Architect (Claude)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1100, 520]
-    },
-    {
-      "parameters": {
-        "jsCode": "const cmd = $('Build Context').first().json;\nconst resp = $input.first().json;\nconst text = resp.content?.[0]?.text || '';\n\nlet plan;\ntry {\n  const jsonMatch = text.match(/```(?:json)?\\n?([\\s\\S]*?)\\n?```/);\n  plan = JSON.parse(jsonMatch ? jsonMatch[1] : text);\n} catch (e) {\n  plan = {\n    task_summary: cmd.task,\n    branch_name: 'feature/auto-' + Date.now(),\n    steps: [{\n      step_id: 1,\n      action: 'create',\n      target_file: 'output.txt',\n      description: text.slice(0, 500),\n      acceptance_criteria: ['Implementation matches description']\n    }]\n  };\n}\n\nconst verification = plan.verification || { commands: [], expected_outcomes: [] };\n\n// Output one item per step for looping\nreturn plan.steps.map((step, i) => ({\n  json: {\n    ...cmd,\n    plan_summary: plan.task_summary,\n    branch_name: plan.branch_name,\n    total_steps: plan.steps.length,\n    step_index: i,\n    step: step,\n    retryCount: 0,\n    verification\n  }\n}));"
-      },
-      "id": "a1000000-0000-0000-0000-000000000031",
-      "name": "Parse Plan → Split Steps",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1320, 520]
-    },
-    {
-      "parameters": {
-        "url": "=https://api.github.com/repos/{{ $json.repository }}/git/refs",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Accept", "value": "application/vnd.github.v3+json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"ref\": \"refs/heads/{{ $json.branch_name }}\",\n  \"sha\": \"{{ $('Fetch Repo Tree').first().json.sha || 'main' }}\"\n}",
-        "requestMethod": "POST",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "githubApi",
-        "options": {}
-      },
-      "id": "a1000000-0000-0000-0000-000000000032",
-      "name": "Create Branch",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1540, 400],
-      "credentials": {
-        "githubApi": {
-          "id": "REPLACE_WITH_GITHUB_CREDENTIAL_ID",
-          "name": "GitHub"
+        "promptType": "define",
+        "text": "=Task: {{ $json.task }}\n\nRepository: {{ $json.repository || 'not specified' }}\n\nFile tree:\n{{ $json.fileTree }}",
+        "options": {
+          "systemMessage": "You are the Architect Agent. You think like a senior developer who doesn't just write code \u2014 you make things WORK end-to-end.\n\nWhen a user asks you to build something, think: \"How will they actually USE this? Can they see it? Run it? Test it?\"\n\nCRITICAL THINKING:\n- If the task involves anything visual (HTML, web page, UI, dashboard) \u2192 the user needs a SERVER to view it. Add a Dockerfile + docker-compose.yml with nginx or a simple HTTP server.\n- If the repo is empty or has no server \u2192 scaffold the project properly. Don't just create one file.\n- If the repo already has a server/framework \u2192 add the feature to the existing codebase.\n- If the task is backend (API endpoint, database change) \u2192 modify the existing server code.\n- Always ask yourself: \"After my changes, can the user run `docker compose up` and see the result?\"\n\nRespond with ONLY valid JSON (no markdown fences):\n{\n  \"task_summary\": \"one-line summary\",\n  \"branch_name\": \"feature/descriptive-name\",\n  \"steps\": [\n    {\n      \"step_id\": 1,\n      \"action\": \"create|modify|delete\",\n      \"target_file\": \"path/to/file\",\n      \"description\": \"what and why\",\n      \"acceptance_criteria\": [\"criterion 1\", \"criterion 2\"]\n    }\n  ],\n  \"verification\": {\n    \"container_image\": \"docker:dind\",\n    \"commands\": [\"docker compose up -d --build --wait\", \"curl http://localhost:8080\"],\n    \"expected_outcomes\": [\"Server starts\", \"Page is accessible\"]\n  },\n  \"deployment\": {\n    \"type\": \"web-server\",\n    \"method\": \"docker-compose\",\n    \"port\": 8080,\n    \"health_endpoint\": \"/\",\n    \"description\": \"What the server does\"\n  }\n}\n\nSTEP RULES:\n- One file per step. Keep steps small.\n- Use \"target_file\" (not \"file\") and \"action\" (not \"name\") for each step.\n- Always include verification.commands that work in a clean clone.\n\nEXAMPLES of good thinking:\n\nUser: \"make a canvas page with a clock\" (empty repo)\n\u2192 Steps: 1) Create index.html with canvas clock, 2) Create Dockerfile (nginx), 3) Create docker-compose.yml\n\u2192 verification.container_image: \"docker:dind\"\n\u2192 deployment: { type: \"web-server\", port: 8080, health_endpoint: \"/\" }\n\u2192 After this, user runs docker compose up and sees the clock at localhost:8080\n\nUser: \"add a /status endpoint\" (repo has Express server)\n\u2192 Steps: 1) Modify src/routes.js to add /status\n\u2192 verification uses existing docker-compose or standalone Node\n\u2192 deployment: existing server config\n\nUser: \"run tests\" (repo has docker-compose + tests)\n\u2192 Steps: [] (empty \u2014 no code changes)\n\u2192 verification.container_image: \"docker:dind\", commands: health check\n\u2192 deployment: { type: \"web-server\" } if it's a server\n\nUser: \"write a Python script to process CSV files\"\n\u2192 Steps: 1) Create process_csv.py\n\u2192 verification: python:3.12-slim, commands: [\"python process_csv.py --help\"]\n\u2192 deployment: null (not a web server, just a script)\n\nCONTAINER IMAGE RULES:\n- If project needs docker-compose (multi-service, database, or you're creating one): \"docker:dind\"\n- Simple single-language project: \"rust:1.88-slim\", \"node:22-slim\", \"python:3.12-slim\", \"golang:1.23-alpine\"\n- Check codebase analysis for existing setup."
         }
       },
-      "continueOnFail": true
+      "name": "\ud83e\udde0 Architect",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        2424,
+        584
+      ],
+      "id": "583cf15f-b0e9-431c-99bf-8453f6ae411f"
     },
     {
       "parameters": {
-        "batchSize": 1,
+        "model": {
+          "__rl": true,
+          "value": "mlx-qwen3.5-27b-claude-4.6-opus-reasoning-distilled-v2",
+          "mode": "list",
+          "cachedResultName": "mlx-qwen3.5-27b-claude-4.6-opus-reasoning-distilled-v2"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "name": "Architect LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        2656
+      ],
+      "id": "d4a262d3-b073-4e70-a415-43d9b7035889",
+      "credentials": {
+        "openAiApi": {
+          "id": "bkrLM8NKWxLDHqRL",
+          "name": "LMSTUDIO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const cmd = $('Build Context').first().json;\nconst resp = $input.first().json;\nconst text = resp.output || resp.text || '';\n\nlet plan;\ntry {\n  const jsonMatch = text.match(/```(?:json)?\\n?([\\s\\S]*?)\\n?```/);\n  plan = JSON.parse(jsonMatch ? jsonMatch[1] : text);\n} catch (e) {\n  const objMatch = text.match(/\\{[\\s\\S]*\\}/);\n  try {\n    plan = JSON.parse(objMatch ? objMatch[0] : '{}');\n  } catch {\n    plan = {\n      task_summary: cmd.task,\n      branch_name: 'feature/auto-' + Date.now(),\n      steps: [{\n        step_id: 1,\n        action: 'create',\n        target_file: 'output.txt',\n        description: text.slice(0, 500),\n        acceptance_criteria: ['Implementation matches description']\n      }]\n    };\n  }\n}\n\nconst verification = plan.verification || { commands: [], expected_outcomes: [] };\nconst deployment = plan.deployment || null;\nlet steps = plan.steps || [];\n\nif (steps.length === 0) {\n  steps = [{\n    step_id: 1,\n    action: 'skip',\n    target_file: 'README.md',\n    description: 'No code changes needed \u2014 verification only',\n    acceptance_criteria: ['No changes required']\n  }];\n}\n\nreturn steps.map((step, i) => ({\n  json: {\n    ...cmd,\n    plan_summary: plan.task_summary,\n    branch_name: plan.branch_name,\n    total_steps: steps.length,\n    step_index: i,\n    step: step,\n    retryCount: 0,\n    verification,\n    deployment,\n    skipExecution: step.action === 'skip'\n  }\n}));"
+      },
+      "name": "Parse Plan \u2192 Split Steps",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        584
+      ],
+      "id": "f817b786-3569-4956-889c-100352db37ce"
+    },
+    {
+      "parameters": {
         "options": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000040",
       "name": "Loop Steps",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [1540, 620]
+      "position": [
+        3056,
+        1376
+      ],
+      "id": "c50039a6-9864-4428-9754-570e4fc788a7"
     },
     {
       "parameters": {
-        "url": "=https://api.github.com/repos/{{ $json.repository }}/contents/{{ $json.step.target_file }}?ref=main",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "githubApi",
-        "options": {}
+        "resource": "file",
+        "operation": "get",
+        "owner": {
+          "__rl": true,
+          "value": "={{ $('Normalize Code').first().json.repository.split('/')[0] }}",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "={{ $json.repository.split('/')[1] }}",
+          "mode": "name"
+        },
+        "filePath": "={{ $json.step.target_file }}",
+        "additionalParameters": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000041",
       "name": "Fetch Existing File",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1760, 620],
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        3280,
+        656
+      ],
+      "id": "df03978f-e601-43e0-bda7-88885af6096d",
+      "webhookId": "5d73614d-872d-48ea-a7b3-48ac36737ca3",
       "credentials": {
         "githubApi": {
-          "id": "REPLACE_WITH_GITHUB_CREDENTIAL_ID",
-          "name": "GitHub"
+          "id": "m8IjGnjp25dj792Z",
+          "name": "GitHub account"
         }
       },
       "continueOnFail": true
@@ -199,721 +267,2001 @@
       "parameters": {
         "jsCode": "const item = $('Loop Steps').first().json;\nconst fileResp = $input.first().json;\n\nlet existing = null;\nlet fileSha = null;\nif (fileResp.content && fileResp.encoding === 'base64') {\n  existing = Buffer.from(fileResp.content, 'base64').toString('utf-8');\n  fileSha = fileResp.sha;\n}\n\nreturn {\n  json: {\n    ...item,\n    existingContent: existing,\n    fileSha\n  }\n};"
       },
-      "id": "a1000000-0000-0000-0000-000000000042",
       "name": "Prep for Executor",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1980, 620]
+      "position": [
+        3504,
+        656
+      ],
+      "id": "47e5a7ee-2ec1-467a-a1b1-df2f7e7e9c1e"
     },
     {
       "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "is-create",
-              "leftValue": "={{ $json.step.action }}",
-              "rightValue": "create",
-              "operator": { "type": "string", "operation": "equals" }
-            }
-          ],
-          "combinator": "and"
+        "promptType": "define",
+        "text": "=Task: {{ $json.step.description }}\nFile: {{ $json.step.target_file }}\nAction: {{ $json.step.action }}\n\n{{ $json.existingContent ? 'Existing file content:\\n' + $json.existingContent : '(New file - no existing content)' }}\n{{ $json.reviewerFeedback ? '\\nFIX THESE ISSUES:\\n' + $json.reviewerFeedback : '' }}\n\nAcceptance criteria:\n{{ $json.step.acceptance_criteria.join('\\n') }}\n\n\n\"The repository is {{ $json.repository }}. If you need to see related files to write correct imports or follow existing patterns, use the available tool to fetch them.\"\n\nWrite the COMPLETE file content. Output ONLY the code, no explanations or markdown fences.",
+        "options": {
+          "systemMessage": "You are an Executor Agent. Write clean, production-quality code. Respond with ONLY the complete file content, no explanations, no markdown fences, no commentary. Just the raw code."
         }
       },
-      "id": "a1000000-0000-0000-0000-000000000043",
-      "name": "New File? → Ollama",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [2200, 620]
+      "name": "\u26a1 Executor",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        3848,
+        532
+      ],
+      "id": "703cb574-4d67-4f91-8b00-2deb764dd3b7"
     },
     {
       "parameters": {
-        "url": "http://ollama:11434/api/chat",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"{{ $env.OLLAMA_CODE_MODEL || 'deepseek-coder-v2:16b' }}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an Executor Agent. Write clean, production-quality code. Respond with ONLY the complete file content, no explanations or markdown fences.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Task: {{ $json.step.description }}\\nFile: {{ $json.step.target_file }}\\n{{ $json.reviewerFeedback ? 'FIX THESE ISSUES:\\n' + $json.reviewerFeedback : '' }}\\n\\nAcceptance criteria:\\n{{ $json.step.acceptance_criteria.join('\\\\n') }}\\n\\nWrite the complete file content.\"\n    }\n  ],\n  \"stream\": false\n}",
-        "options": {}
-      },
-      "id": "a1000000-0000-0000-0000-000000000050",
-      "name": "⚡ Executor (Ollama)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2420, 520]
-    },
-    {
-      "parameters": {
-        "url": "https://api.anthropic.com/v1/messages",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
-            { "name": "anthropic-version", "value": "2023-06-01" },
-            { "name": "content-type", "value": "application/json" }
-          ]
+        "model": {
+          "__rl": true,
+          "value": "mlx-qwen3.5-27b-claude-4.6-opus-reasoning-distilled-v2",
+          "mode": "list",
+          "cachedResultName": "mlx-qwen3.5-27b-claude-4.6-opus-reasoning-distilled-v2"
         },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-haiku-4-5-20251001\",\n  \"max_tokens\": 4096,\n  \"system\": \"You are an Executor Agent. Modify existing code as instructed. Respond with ONLY the complete updated file content, no explanations or markdown fences.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Task: {{ $json.step.description }}\\nFile: {{ $json.step.target_file }}\\n\\nExisting content:\\n{{ $json.existingContent || '(empty file)' }}\\n{{ $json.reviewerFeedback ? '\\nFIX THESE ISSUES:\\n' + $json.reviewerFeedback : '' }}\\n\\nAcceptance criteria:\\n{{ $json.step.acceptance_criteria.join('\\\\n') }}\\n\\nWrite the complete updated file content.\"\n    }\n  ]\n}",
-        "options": {}
+        "options": {
+          "temperature": 0.1
+        }
       },
-      "id": "a1000000-0000-0000-0000-000000000051",
-      "name": "⚡ Executor (Claude)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2420, 740]
-    },
-    {
-      "parameters": {
-        "jsCode": "const prev = $('Prep for Executor').first().json;\nconst raw = $input.first().json;\n\nlet code;\nif (raw.message?.content) {\n  // Ollama\n  code = raw.message.content;\n} else if (raw.content?.[0]?.text) {\n  // Claude\n  code = raw.content[0].text;\n} else {\n  code = JSON.stringify(raw);\n}\n\n// Strip markdown fences\ncode = code.replace(/^```\\w*\\n?/, '').replace(/\\n?```$/, '').trim();\n\nreturn {\n  json: {\n    ...prev,\n    generatedCode: code,\n    commitMsg: prev.step.action + ': ' + prev.step.description.slice(0, 60)\n  }\n};"
-      },
-      "id": "a1000000-0000-0000-0000-000000000052",
-      "name": "Normalize Code",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2640, 620]
-    },
-    {
-      "parameters": {
-        "url": "=https://api.github.com/repos/{{ $json.repository }}/contents/{{ $json.step.target_file }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Accept", "value": "application/vnd.github.v3+json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"message\": \"{{ $json.commitMsg }}\",\n  \"content\": \"{{ Buffer.from($json.generatedCode, 'utf-8').toString('base64') }}\",\n  \"branch\": \"{{ $json.branch_name }}\"\n  {{ $json.fileSha ? ', \"sha\": \"' + $json.fileSha + '\"' : '' }}\n}",
-        "requestMethod": "PUT",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "githubApi",
-        "options": {}
-      },
-      "id": "a1000000-0000-0000-0000-000000000060",
-      "name": "Commit to GitHub",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2860, 620],
+      "name": "Executor LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        2240
+      ],
+      "id": "59bca4db-dbc1-4170-b6b5-4167c114901f",
       "credentials": {
-        "githubApi": {
-          "id": "REPLACE_WITH_GITHUB_CREDENTIAL_ID",
-          "name": "GitHub"
+        "openAiApi": {
+          "id": "bkrLM8NKWxLDHqRL",
+          "name": "LMSTUDIO"
         }
       }
     },
     {
       "parameters": {
-        "url": "https://api.anthropic.com/v1/messages",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "x-api-key", "value": "={{ $env.ANTHROPIC_API_KEY }}" },
-            { "name": "anthropic-version", "value": "2023-06-01" },
-            { "name": "content-type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-20250514\",\n  \"max_tokens\": 2048,\n  \"system\": \"You are the Reviewer Agent. Review code against acceptance criteria.\\n\\nRespond with ONLY valid JSON (no markdown fences):\\n{\\n  \\\"verdict\\\": \\\"PASS\\\" or \\\"FAIL\\\",\\n  \\\"criteria_results\\\": [{\\\"criterion\\\": \\\"...\\\", \\\"met\\\": true, \\\"comment\\\": \\\"\\\"}],\\n  \\\"feedback\\\": \\\"specific fix instructions if FAIL, empty string if PASS\\\"\\n}\\n\\nBe strict on criteria. Be practical on style.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"## Review\\n\\nFile: {{ $('Normalize Code').first().json.step.target_file }}\\nAction: {{ $('Normalize Code').first().json.step.action }}\\nDescription: {{ $('Normalize Code').first().json.step.description }}\\n\\nAcceptance Criteria:\\n{{ $('Normalize Code').first().json.step.acceptance_criteria.map((c, i) => (i+1) + '. ' + c).join('\\\\n') }}\\n\\nCode:\\n```\\n{{ $('Normalize Code').first().json.generatedCode }}\\n```\\n\\nReview against all criteria.\"\n    }\n  ]\n}",
-        "options": {}
+        "jsCode": "const prev = $('Prep for Executor').first().json;\nconst raw = $input.first().json;\n\nlet code = raw.output || raw.text || '';\n\n// Strip <think>...</think> reasoning blocks\ncode = code.replace(/<think>[\\s\\S]*?<\\/think>/g, '').trim();\n\n// Strip LLM stop/special tokens\ncode = code.replace(/<\\|im_end\\|>/g, '').replace(/<\\|im_start\\|>/g, '').replace(/<\\|endoftext\\|>/g, '').trim();\n\n// Strip markdown fences if present\ncode = code.replace(/^```\\w*\\n?/, '').replace(/\\n?```$/, '').trim();\n\n// If still empty, try to find code block\nif (!code) {\n  const match = (raw.output || '').match(/```\\w*\\n([\\s\\S]*?)\\n```/);\n  if (match) code = match[1].trim();\n}\n\n// Normalize step fields \u2014 handle both formats:\n// Architect may return {target_file, action} or {file, name}\nconst step = prev.step || {};\nconst targetFile = step.target_file || step.file || 'output.txt';\nconst action = step.action || step.name || 'create';\nconst description = step.description || '';\n\nreturn {\n  json: {\n    ...prev,\n    step: { ...step, target_file: targetFile, action: action },\n    file: targetFile,\n    generatedCode: code,\n    commitMsg: action + ': ' + description.slice(0, 60)\n  }\n};"
       },
-      "id": "a1000000-0000-0000-0000-000000000070",
-      "name": "👁 Reviewer (Claude)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3080, 620]
+      "name": "Normalize Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4320,
+        532
+      ],
+      "id": "e6d1ae54-9ab8-4ebc-b4f5-846b2d3ede20"
     },
     {
       "parameters": {
-        "jsCode": "const prev = $('Normalize Code').first().json;\nconst resp = $input.first().json;\nconst text = resp.content?.[0]?.text || '';\n\nlet review;\ntry {\n  const m = text.match(/```(?:json)?\\n?([\\s\\S]*?)\\n?```/);\n  review = JSON.parse(m ? m[1] : text);\n} catch {\n  review = { verdict: 'PASS', criteria_results: [], feedback: '' };\n}\n\nconst passed = review.verdict === 'PASS';\nconst retryCount = prev.retryCount || 0;\nconst canRetry = prev.mode === 'ralph' && retryCount < prev.maxRetries;\n\nreturn {\n  json: {\n    ...prev,\n    verdict: review.verdict,\n    reviewFeedback: review.feedback || '',\n    criteriaResults: review.criteria_results || [],\n    passed,\n    retryCount: passed ? 0 : retryCount + 1,\n    shouldRetry: !passed && canRetry,\n    reviewerFeedback: !passed ? review.feedback : null\n  }\n};"
+        "promptType": "define",
+        "text": "=## Review\n\nFile: {{ $('Normalize Code').first().json.step.target_file }}\nAction: {{ $('Normalize Code').first().json.step.action }}\nDescription: {{ $('Normalize Code').first().json.step.description }}\n\nAcceptance Criteria:\n{{ $('Normalize Code').first().json.step.acceptance_criteria.map((c, i) => (i+1) + '. ' + c).join('\\n') }}\n\nCode:\n```\n{{ $('Normalize Code').first().json.generatedCode }}\n```\n\nReview against all criteria.",
+        "options": {
+          "systemMessage": "You are the Reviewer Agent. Review code against acceptance criteria.\n\nRespond with ONLY valid JSON (no markdown fences):\n{\n  \"verdict\": \"PASS\" or \"FAIL\",\n  \"criteria_results\": [{\"criterion\": \"...\", \"met\": true, \"comment\": \"\"}],\n  \"feedback\": \"specific fix instructions if FAIL, empty string if PASS\"\n}\n\nBe strict on criteria. Be practical on style."
+        }
       },
-      "id": "a1000000-0000-0000-0000-000000000071",
+      "name": "\ud83d\udc41 Reviewer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        4768,
+        532
+      ],
+      "id": "26d75fa1-63ba-4ba4-9642-6d0310129465"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "mlx-qwen3.5-27b-claude-4.6-opus-reasoning-distilled-v2",
+          "mode": "list",
+          "cachedResultName": "mlx-qwen3.5-27b-claude-4.6-opus-reasoning-distilled-v2"
+        },
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "name": "Reviewer LLM",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        2448
+      ],
+      "id": "081ea874-7714-405b-a5ea-2dc04e7977d9",
+      "credentials": {
+        "openAiApi": {
+          "id": "bkrLM8NKWxLDHqRL",
+          "name": "LMSTUDIO"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const prev = $('Normalize Code').first().json;\nconst resp = $input.first().json;\nconst text = resp.output || resp.text || '';\n\nlet review;\ntry {\n  const m = text.match(/```(?:json)?\\n?([\\s\\S]*?)\\n?```/);\n  const objMatch = text.match(/\\{[\\s\\S]*\\}/);\n  review = JSON.parse(m ? m[1] : (objMatch ? objMatch[0] : text));\n} catch {\n  review = { verdict: 'PASS', criteria_results: [], feedback: '' };\n}\n\nconst passed = review.verdict === 'PASS';\nconst retryCount = prev.retryCount || 0;\nconst canRetry = prev.mode === 'ralph' && retryCount < prev.maxRetries;\n\nreturn {\n  json: {\n    ...prev,\n    verdict: review.verdict,\n    reviewFeedback: review.feedback || '',\n    criteriaResults: review.criteria_results || [],\n    passed,\n    retryCount: passed ? 0 : retryCount + 1,\n    shouldRetry: !passed && canRetry,\n    reviewerFeedback: !passed ? review.feedback : null\n  }\n};"
+      },
       "name": "Parse Review",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3300, 620]
+      "position": [
+        5120,
+        532
+      ],
+      "id": "43599750-2ccc-4e3a-be3e-c4f6f2fc4830"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "should-retry",
               "leftValue": "={{ $json.shouldRetry }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000072",
-      "name": "Retry? ($ralph)",
+      "name": "Retry? ($auto)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [3520, 620]
+      "position": [
+        5344,
+        532
+      ],
+      "id": "723265e0-a2fe-4db9-86f2-854d72afa25c"
     },
     {
       "parameters": {
-        "jsCode": "// Feed back to executor with reviewer feedback\nconst item = $input.first().json;\nreturn {\n  json: {\n    ...item,\n    // reviewerFeedback is already set from Parse Review\n  }\n};"
+        "jsCode": "const item = $input.first().json;\nreturn { json: { ...item } };"
       },
-      "id": "a1000000-0000-0000-0000-000000000073",
       "name": "Retry with Feedback",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3740, 520]
+      "position": [
+        5568,
+        536
+      ],
+      "id": "e72fc130-0fa1-43ae-8050-3d6a1c5e62cc"
     },
     {
       "parameters": {
-        "jsCode": "// Step done (pass or final fail), continue to next step in loop\nconst item = $input.first().json;\nreturn {\n  json: {\n    step_id: item.step.step_id,\n    file: item.step.target_file,\n    verdict: item.verdict,\n    feedback: item.reviewFeedback,\n    verification: item.verification,\n    branch_name: item.branch_name,\n    repository: item.repository,\n    mode: item.mode,\n    maxRetries: item.maxRetries,\n    retryCount: item.retryCount\n  }\n};"
+        "jsCode": "const prev = $('Normalize Code').first().json;\nconst review = $input.first().json;\nconst verdict = review.verdict || 'PASS';\nconst feedback = review.feedback || '';\n\nreturn {\n  json: {\n    ...prev,\n    verdict,\n    feedback,\n    file: prev.file || prev.step?.target_file || prev.step?.file || 'unknown',\n    step_id: prev.step?.step_id || prev.step_index + 1\n  }\n};"
       },
-      "id": "a1000000-0000-0000-0000-000000000074",
       "name": "Step Done",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3740, 740]
+      "position": [
+        5568,
+        728
+      ],
+      "id": "23e5926e-152a-4bcd-add2-4a6621e4361c"
     },
     {
       "parameters": {
-        "jsCode": "// Collect all step results\nconst results = $input.all().map(i => i.json);\nconst cmd = $('Parse Command').first().json;\nconst plan = $('Parse Plan → Split Steps').first().json;\n\nconst passed = results.filter(r => r.verdict === 'PASS').length;\nconst failed = results.filter(r => r.verdict === 'FAIL').length;\nconst total = results.length;\n\nconst verification = plan.verification || { commands: [] };\n\nlet status = failed === 0 ? '✅' : '⚠️';\nlet stepSummary = results.map(r => \n  `${r.verdict === 'PASS' ? '✅' : '❌'} Step ${r.step_id}: \\`${r.file}\\``\n).join('\\n');\n\nreturn {\n  json: {\n    channelId: cmd.channelId,\n    repository: cmd.repository,\n    branch_name: plan.branch_name,\n    mode: cmd.mode,\n    maxRetries: cmd.maxRetries,\n    verification,\n    retryCount: Math.max(...results.map(r => r.retryCount || 0), 0),\n    message: `${status} **Task ${failed === 0 ? 'Complete' : 'Finished with Issues'}** (${passed}/${total} passed)\\n` +\n      `> ${cmd.task}\\n\\n` +\n      `${stepSummary}\\n\\n` +\n      `📦 Branch: \\`${plan.branch_name}\\``,\n    createPR: failed === 0\n  }\n};"
+        "jsCode": "const results = $input.all().map(i => i.json);\nconst cmd = $('Parse Command').first().json;\nconst plan = $('Parse Plan \u2192 Split Steps').first().json;\n\n// Check if Architect planned skip steps (verification-only run)\nconst isVerificationOnly = plan.skipExecution === true || plan.step?.action === 'skip';\n\nconst passed = results.filter(r => r.verdict === 'PASS').length;\nconst failed = results.filter(r => r.verdict === 'FAIL').length;\nconst total = results.length;\n\nconst verification = plan.verification || { commands: [] };\nconst deployment = plan.deployment || null;\n\nlet summary, createPR;\nif (isVerificationOnly) {\n  summary = 'Task Complete (verification only)\\nNo code changes needed\\nBranch: ' + plan.branch_name;\n  createPR = true; // still go through verify+deploy, PR will be skipped at the end\n} else {\n  const stepSummary = results.map(r =>\n    `${r.verdict === 'PASS' ? 'PASS' : 'FAIL'} Step ${r.step_id}: ${r.file}`\n  ).join('\\n');\n  summary = `Task ${failed === 0 ? 'Complete' : 'Finished with Issues'} (${passed}/${total} passed)\\n${stepSummary}\\nBranch: ${plan.branch_name}`;\n  createPR = failed === 0;\n}\n\nreturn {\n  json: {\n    repository: cmd.repository,\n    branch_name: plan.branch_name,\n    mode: cmd.mode,\n    maxRetries: cmd.maxRetries,\n    verification,\n    deployment,\n    retryCount: Math.max(...results.map(r => r.retryCount || 0), 0),\n    summary,\n    createPR,\n    totalSteps: isVerificationOnly ? 0 : total,\n    passedSteps: isVerificationOnly ? 0 : passed,\n    verificationOnly: isVerificationOnly\n  }\n};"
       },
-      "id": "a1000000-0000-0000-0000-000000000080",
       "name": "Summarize Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2200, 960]
+      "position": [
+        3280,
+        1304
+      ],
+      "id": "263b84bb-208b-4e36-8c4e-c73613f8c82b"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "has-cmds",
-              "leftValue": "={{ $json.createPR && ($json.verification?.commands?.length || 0) > 0 }}",
-              "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
-            }
-          ],
-          "combinator": "and"
-        }
-      },
-      "id": "a2000000-0000-0000-0000-000000000001",
-      "name": "Has Verification?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [2420, 960]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "create-pr",
               "leftValue": "={{ $json.createPR }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000081",
       "name": "All Passed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2640, 1100]
+      "position": [
+        3504,
+        1304
+      ],
+      "id": "ab1c2a8e-17ba-491b-b3fc-7c41488cabb5"
     },
     {
       "parameters": {
+        "method": "POST",
         "url": "=https://api.github.com/repos/{{ $json.repository }}/pulls",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Accept", "value": "application/vnd.github.v3+json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"title\": \"[dev-team] {{ $('Parse Command').first().json.task.slice(0, 60) }}\",\n  \"body\": \"Automated by Dev Team Orchestrator\\n\\nRequested by: {{ $('Parse Command').first().json.author }}\\nMode: {{ $('Parse Command').first().json.mode }}\",\n  \"head\": \"{{ $json.branch_name }}\",\n  \"base\": \"main\"\n}",
-        "requestMethod": "POST",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: '[dev-team] ' + $('Parse Command').first().json.task.slice(0, 60), body: 'Automated by Dev Team Orchestrator\\n\\nRequested by: ' + $('Parse Command').first().json.author + '\\nMode: ' + $('Parse Command').first().json.mode, head: $json.branch_name, base: 'main' }) }}",
         "options": {}
       },
-      "id": "a1000000-0000-0000-0000-000000000082",
       "name": "Create PR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3300, 860],
+      "position": [
+        6688,
+        1208
+      ],
+      "id": "97519694-0231-4b3b-99e2-dadf40063883",
       "credentials": {
         "githubApi": {
-          "id": "REPLACE_WITH_GITHUB_CREDENTIAL_ID",
-          "name": "GitHub"
+          "id": "m8IjGnjp25dj792Z",
+          "name": "GitHub account"
         }
       },
       "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "const summary = $('Summarize Results').first().json;\nconst pr = $input.first().json;\nconst prUrl = pr.html_url || '(PR creation failed)';\n\nreturn {\n  json: {\n    channelId: summary.channelId,\n    finalMsg: summary.message + `\\n🔗 PR: ${prUrl}`\n  }\n};"
+        "jsCode": "const summary = $('Summarize Results').first().json;\nconst pr = $input.first().json;\nconst prUrl = pr.html_url || '';\nconst channelId = $('Parse Command').first().json.channelId;\n\nif (summary.verificationOnly) {\n  return {\n    json: {\n      channelId,\n      result: '**Pipeline Complete \u2014 Verification Only**\\n\\n' +\n        summary.summary + '\\n' +\n        '**Verification:** Passed\\n' +\n        'No code changes were needed. Server verified and deployed.'\n    }\n  };\n}\n\nconst stepCount = summary.totalSteps || '?';\nconst passedCount = summary.passedSteps || '?';\n\nreturn {\n  json: {\n    channelId,\n    result: '**Pipeline Complete \u2014 PR Created**\\n\\n' +\n      summary.summary + '\\n\\n' +\n      '**Steps:** ' + passedCount + '/' + stepCount + ' passed review\\n' +\n      '**Verification:** Passed\\n' +\n      '**PR:** ' + prUrl\n  }\n};"
       },
-      "id": "a1000000-0000-0000-0000-000000000083",
-      "name": "Add PR Link",
+      "name": "Final Result (PR)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3520, 860]
+      "position": [
+        6912,
+        1208
+      ],
+      "id": "56a9da5c-f80a-4769-a71f-6fa63d4531ac"
     },
     {
       "parameters": {
-        "jsCode": "const summary = $('Summarize Results').first().json;\nreturn {\n  json: {\n    channelId: summary.channelId,\n    finalMsg: summary.message + '\\n\\n⚠️ Some steps failed. PR not created. Review and retry.'\n  }\n};"
+        "jsCode": "const summary = $('Summarize Results').first().json;\nconst channelId = $('Parse Command').first().json.channelId;\n\nif (summary.verificationOnly) {\n  return {\n    json: {\n      channelId,\n      result: '**Pipeline Complete \u2014 Verification Only**\\n\\n' +\n        summary.summary + '\\n' +\n        '**Verification:** Passed\\n' +\n        'No code changes were needed. Server verified and deployed.'\n    }\n  };\n}\n\nconst stepCount = summary.totalSteps || '?';\nconst passedCount = summary.passedSteps || '?';\n\nreturn {\n  json: {\n    channelId,\n    result: '**Pipeline Complete \u2014 PR Not Created**\\n\\n' +\n      summary.summary + '\\n\\n' +\n      '**Steps:** ' + passedCount + '/' + stepCount + ' passed review\\n' +\n      'Fix the issues and try again.'\n  }\n};"
       },
-      "id": "a1000000-0000-0000-0000-000000000084",
-      "name": "No PR (Failures)",
+      "name": "Final Result (Failed)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3300, 1200]
+      "position": [
+        6912,
+        896
+      ],
+      "id": "b060f46c-796c-482f-95f5-1608608a615d"
     },
     {
       "parameters": {
-        "content": "={{ $json.finalMsg }}",
-        "options": { "channelId": "={{ $json.channelId }}" }
+        "content": "## \ud83e\udd16 Dev Team Orchestrator\n\nArchitect \u2192 Executor \u2192 Reviewer pipeline using n8n AI Agent nodes.\n\n**Discord Commands:**\n- `$team <task> in owner/repo` \u2014 Single pass\n- `$ralph <task> in owner/repo` \u2014 Self-healing (3 retries)\n\n**LLM Sub-nodes:** Swap to any model.\n**GitHub:** All native GitHub nodes.",
+        "height": 280,
+        "width": 420,
+        "color": 5
       },
-      "id": "a1000000-0000-0000-0000-000000000090",
-      "name": "Post Result to Discord",
-      "type": "n8n-nodes-base.discord",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -162,
+        -24
+      ],
+      "id": "4bda99ba-3984-4a21-a4bd-89bcd443ba72"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 1: Input & Context",
+        "height": 60,
+        "width": 260
+      },
+      "name": "Phase 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        544
+      ],
+      "id": "ca7eab52-c95e-487f-ace8-019c1e9e4cdd"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 2: Architect (AI Agent)",
+        "height": 60,
+        "width": 280,
+        "color": 3
+      },
+      "name": "Phase 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2544,
+        512
+      ],
+      "id": "863854fb-55ec-4a05-acc7-f1c4b25113ed"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 3: Executor \u2192 Reviewer Loop (AI Agents)",
+        "height": 60,
+        "width": 380,
+        "color": 4
+      },
+      "name": "Phase 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        4016,
+        448
+      ],
+      "id": "9c7036d5-2281-41eb-a33e-9d50ff35e009"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 4: Results & PR",
+        "height": 60,
+        "width": 260,
+        "color": 6
+      },
+      "name": "Phase 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3440,
+        992
+      ],
+      "id": "6e0526eb-5300-42fe-969f-6db9d5e31b5f"
+    },
+    {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        96
+      ],
+      "id": "8a037423-3d59-46aa-9fb8-9467379af233"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    content: '$ralph add a hello world Python script with unit tests in jonpol01/test-repo',\n    channelId: '1489848051538329701',\n    author: { username: 'manual-test' }\n  }\n};"
+      },
+      "name": "Test Input",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3740, 960],
-      "credentials": {
-        "discordBotApi": {
-          "id": "REPLACE_WITH_DISCORD_BOT_CREDENTIAL_ID",
-          "name": "Discord Bot"
+      "position": [
+        0,
+        96
+      ],
+      "id": "dfb1a0a6-ba07-4dec-9aeb-35d395cdb406"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "owner": "={{ $('Normalize Code').first().json.repository.split('/')[0] }}",
+        "repository": "={{ $('Normalize Code').first().json.repository.split('/')[1] }}",
+        "filePath": "={{ $('Normalize Code').first().json.step.target_file }}",
+        "fileContent": "={{ $('Normalize Code').first().json.generatedCode }}",
+        "commitMessage": "={{ $('Normalize Code').first().json.commitMsg }}",
+        "additionalParameters": {
+          "branch": {
+            "branch": "={{ $('Normalize Code').first().json.branch_name }}"
+          }
         }
-      }
+      },
+      "name": "Commit to GitHub",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        4544,
+        532
+      ],
+      "id": "b4621219-764a-4b2b-80ff-d29c03100dc8",
+      "webhookId": "720fbb45-a191-4cca-97a8-24c9419d9202",
+      "credentials": {
+        "githubApi": {
+          "id": "m8IjGnjp25dj792Z",
+          "name": "GitHub account"
+        }
+      },
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "// Create a K8s Job to clone the branch and run verification commands\nconst item = $input.first().json;\nconst cmds = item.verification.commands || [];\nconst image = item.verification.image || ($env.K8S_RUNNER_IMAGE || 'dev-team-runner:latest');\nconst branch = item.branch_name;\nconst repo = item.repository;\nconst jobName = 'verify-' + branch.replace(/\\//g, '-').slice(0, 40) + '-' + Date.now();\n\nconst manifest = {\n  apiVersion: 'batch/v1',\n  kind: 'Job',\n  metadata: {\n    name: jobName,\n    namespace: $env.K8S_NAMESPACE || 'dev-team',\n    labels: {\n      app: 'dev-team-verify',\n      branch: branch.replace(/\\//g, '-').slice(0, 63)\n    }\n  },\n  spec: {\n    ttlSecondsAfterFinished: 3600,\n    backoffLimit: 0,\n    activeDeadlineSeconds: 600,\n    template: {\n      metadata: {\n        labels: {\n          app: 'dev-team-verify',\n          'job-name': jobName\n        }\n      },\n      spec: {\n        restartPolicy: 'Never',\n        containers: [{\n          name: 'verify',\n          image: image,\n          command: ['/bin/sh', '-c'],\n          args: [\n            `git config --global url.\"https://\\${GITHUB_TOKEN}@github.com/\".insteadOf \"https://github.com/\" && ` +\n            `git clone --branch ${branch} --single-branch --depth 1 https://github.com/${repo}.git /workspace && ` +\n            `cd /workspace && ` +\n            `if [ -f requirements.txt ]; then pip install -q -r requirements.txt; fi && ` +\n            `if [ -f package.json ]; then npm ci --silent; fi && ` +\n            cmds.join(' && ')\n          ],\n          env: [\n            { name: 'GITHUB_TOKEN', value: $env.GITHUB_TOKEN || '' }\n          ],\n          resources: {\n            limits: { cpu: '1', memory: '2Gi' },\n            requests: { cpu: '500m', memory: '1Gi' }\n          }\n        }]\n      }\n    }\n  }\n};\n\nreturn {\n  json: {\n    ...item,\n    jobName,\n    k8sNamespace: $env.K8S_NAMESPACE || 'dev-team',\n    jobManifest: manifest\n  }\n};"
+        "url": "=https://api.github.com/repos/{{ $('Parse Command').first().json.repository }}/git/refs/heads/main",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "options": {}
       },
-      "id": "a2000000-0000-0000-0000-000000000002",
-      "name": "Build K8s Job Manifest",
+      "name": "Get Main SHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3056,
+        272
+      ],
+      "id": "8e73acbe-8817-48b1-9ab3-f59c6b3a4490",
+      "credentials": {
+        "githubApi": {
+          "id": "m8IjGnjp25dj792Z",
+          "name": "GitHub account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Parse Command').first().json.repository }}/git/refs",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ref: 'refs/heads/' + $('Parse Plan \u2192 Split Steps').first().json.branch_name, sha: $json.object.sha }) }}",
+        "options": {}
+      },
+      "name": "Create Feature Branch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3280,
+        272
+      ],
+      "id": "3a20440c-fe83-4a47-9366-6d314b1bf206",
+      "credentials": {
+        "githubApi": {
+          "id": "m8IjGnjp25dj792Z",
+          "name": "GitHub account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e8d295d7-2c01-4a96-8adb-07565a7707b6",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -224,
+        288
+      ],
+      "id": "653d06df-db00-459a-a440-45310060de8c",
+      "name": "Webhook",
+      "webhookId": "e8d295d7-2c01-4a96-8adb-07565a7707b6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n// Webhook wraps payload in body, flatten it\nconst body = data.body || data;\nreturn { json: body };"
+      },
+      "name": "Flatten Webhook",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2640, 860]
+      "position": [
+        0,
+        288
+      ],
+      "id": "c747ab27-7927-4d00-a4ee-b05d553cf936"
     },
     {
       "parameters": {
-        "url": "={{ $env.K8S_API_URL }}/apis/batch/v1/namespaces/{{ $json.k8sNamespace }}/jobs",
+        "jsCode": "const item = $input.first().json;\nconst cmds = item.verification?.commands || ['echo \"No verification commands\"'];\nconst branch = item.branch_name;\nconst repo = item.repository;\nconst jobName = 'verify-' + branch.replace(/\\//g, '-').slice(0, 40) + '-' + Date.now();\nconst analysis = item.codebaseAnalysis || {};\nconst architectImage = item.verification?.container_image || '';\n\n// Architect's image choice takes priority over analysis\nconst isFullStack = architectImage === 'docker:dind' || analysis.verifyMode === 'full-stack' || analysis.hasDockerCompose;\nconst verifyMode = isFullStack ? 'full-stack' : 'simple';\n\nlet image, fullCmd, securityContext;\n\nif (isFullStack) {\n  // MODE B: Full-stack with Docker-in-Docker\n  image = 'docker:dind';\n  securityContext = { privileged: true };\n\n  const testCmd = cmds.filter(c => c !== 'echo \"No verification commands\"').join(' && ') || analysis.testCommand || 'echo \"No test command\"';\n\n  // For full-stack: build, start, health check, then run tests inside the service container\n  const healthEndpoint = item.deployment?.health_endpoint || '/';\n  const port = item.deployment?.port || 8080;\n\n  // In full-stack mode, the verification IS docker compose up + health check\n  // Skip individual test commands \u2014 they'd need to run inside service containers\n  const dockerTestCmds = 'echo \"Full-stack verification: build + health check\"';\n\n  fullCmd = 'DOCKER_OPTS=\"--dns 8.8.8.8 --dns 8.8.4.4\" dockerd-entrypoint.sh > /dev/null 2>&1 & ' +\n    'echo \"Waiting for Docker daemon...\" && ' +\n    'for i in $(seq 1 30); do docker info > /dev/null 2>&1 && break || sleep 1; done && ' +\n    'apk add --no-cache git curl > /dev/null 2>&1 && ' +\n    'git clone --branch ' + branch + ' --single-branch --depth 1 https://GITHUB_TOKEN_REDACTED@github.com/' + repo + '.git /workspace/repo && ' +\n    'cd /workspace/repo && ' +\n    '(docker login -u johnsoliva -p DOCKER_PAT_REDACTED > /dev/null 2>&1 || true) && ' +\n    'echo \"Docker ready. Building and starting services...\" && ' +\n    'docker compose up -d --build --wait --wait-timeout 300 2>&1 && ' +\n    'echo \"Services up. Running health check...\" && ' +\n    'for i in $(seq 1 30); do RESP=$(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:' + port + healthEndpoint + ' 2>/dev/null); echo \"Health check attempt $i: HTTP $RESP\"; if [ \"$RESP\" = \"200\" ] || [ \"$RESP\" = \"404\" ] || [ \"$RESP\" = \"301\" ]; then echo \"HEALTH_OK\"; break; fi; sleep 2; done && ' +\n    'curl -s http://localhost:' + port + healthEndpoint + ' 2>&1 | head -20 && ' +\n    dockerTestCmds + ' && ' +\n    'echo \"VERIFICATION_PASSED\" && ' +\n    'docker compose logs 2>&1 | tail -50 && ' +\n    'echo \"Server running. Keeping alive...\" && sleep infinity';\n\n} else {\n  // MODE A: Simple single container\n  // Use Architect's image choice if provided, otherwise auto-detect\n  if (architectImage && architectImage !== 'docker:dind') {\n    image = architectImage;\n  } else {\n    const cmdsStr = cmds.join(' ');\n    if (cmdsStr.includes('cargo') || cmdsStr.includes('rustc')) {\n      image = 'rust:1.88-slim';\n    } else if (cmdsStr.includes('npm') || cmdsStr.includes('node') || cmdsStr.includes('jest')) {\n      image = 'node:20-slim';\n    } else if (cmdsStr.includes('go test') || cmdsStr.includes('go build')) {\n      image = 'golang:1.23-alpine';\n    } else if (cmdsStr.includes('python') || cmdsStr.includes('pytest') || cmdsStr.includes('pip')) {\n      image = 'python:3.12-slim';\n    } else {\n      image = 'dev-team-runner:latest';\n    }\n  }\n\n  // Git install for non-runner images\n  let gitInstall = '';\n  if (image.includes('rust')) {\n    gitInstall = 'apt-get update -qq && apt-get install -y -qq git pkg-config libssl-dev > /dev/null 2>&1 && ';\n  } else if (image.includes('python') || image.includes('node')) {\n    gitInstall = 'apt-get update -qq && apt-get install -y -qq git > /dev/null 2>&1 && ';\n  } else if (image.includes('golang') || image.includes('alpine')) {\n    gitInstall = 'apk add --no-cache git > /dev/null 2>&1 && ';\n  }\n\n  // Install deps\n  let installCmd = 'true';\n  if (image.includes('python') || image === 'dev-team-runner:latest') {\n    installCmd = '([ -f requirements.txt ] && pip3 install --break-system-packages -q -r requirements.txt || true)';\n  } else if (image.includes('node')) {\n    installCmd = '([ -f package-lock.json ] && npm ci --silent || ([ -f package.json ] && npm install --silent || true))';\n  } else if (image.includes('golang')) {\n    installCmd = '([ -f go.mod ] && go mod download || true)';\n  }\n\n  // Fix pip commands\n  const fixedCmds = cmds.map(c =>\n    c.replace(/pip install(?! --break)/g, 'pip install --break-system-packages')\n     .replace(/pip3 install(?! --break)/g, 'pip3 install --break-system-packages')\n  );\n\n  fullCmd = gitInstall +\n    'git clone --branch ' + branch + ' --single-branch --depth 1 https://GITHUB_TOKEN_REDACTED@github.com/' + repo + '.git /workspace/repo && ' +\n    'cd /workspace/repo && ' +\n    installCmd + ' && ' +\n    fixedCmds.join(' && ');\n\n  securityContext = {};\n}\n\nconst manifest = {\n  apiVersion: 'batch/v1',\n  kind: 'Job',\n  metadata: {\n    name: jobName,\n    namespace: 'dev-team',\n    labels: { app: 'dev-team-verify' }\n  },\n  spec: {\n    ttlSecondsAfterFinished: 3600,\n    backoffLimit: 0,\n    activeDeadlineSeconds: verifyMode === 'full-stack' ? 1200 : 900,\n    template: {\n      metadata: { labels: { app: 'dev-team-verify', 'job-name': jobName } },\n      spec: {\n        restartPolicy: 'Never',\n        containers: [{\n          name: 'verify',\n          image: image,\n          imagePullPolicy: 'IfNotPresent',\n          command: ['/bin/sh', '-c'],\n          args: [fullCmd],\n          securityContext: securityContext,\n          resources: {\n            limits: { cpu: '2', memory: '4Gi' },\n            requests: { cpu: '1', memory: '2Gi' }\n          }\n        }]\n      }\n    }\n  }\n};\n\nreturn { json: { ...item, jobName, jobManifest: manifest, verifyImage: image, verifyMode: verifyMode, architectImage: architectImage || '(auto-detected)' } };"
+      },
+      "name": "Build K8s Job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3912,
+        1376
+      ],
+      "id": "04f9ecc0-37e8-4237-b6c0-f9827e72b54a"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://host.docker.internal:51574/apis/batch/v1/namespaces/dev-team/jobs",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.K8S_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "K8S_TOKEN_REDACTED"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.jobManifest) }}",
-        "requestMethod": "POST",
-        "options": { "allowUnauthorizedCerts": true }
-      },
-      "id": "a2000000-0000-0000-0000-000000000003",
-      "name": "🚀 Create K8s Job",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2860, 860],
-      "continueOnFail": true
-    },
-    {
-      "parameters": {
-        "amount": 15,
-        "unit": "seconds"
-      },
-      "id": "a2000000-0000-0000-0000-000000000004",
-      "name": "Wait 15s",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [3080, 860]
-    },
-    {
-      "parameters": {
-        "url": "={{ $env.K8S_API_URL }}/apis/batch/v1/namespaces/{{ $('Build K8s Job Manifest').first().json.k8sNamespace }}/jobs/{{ $('Build K8s Job Manifest').first().json.jobName }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.K8S_TOKEN }}" }
-          ]
-        },
-        "options": { "allowUnauthorizedCerts": true }
-      },
-      "id": "a2000000-0000-0000-0000-000000000005",
-      "name": "Check Job Status",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3300, 960]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [
-            {
-              "id": "job-succeeded",
-              "leftValue": "={{ ($json.status?.succeeded || 0) >= 1 || ($json.status?.failed || 0) >= 1 }}",
-              "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
-            }
-          ],
-          "combinator": "and"
+        "options": {
+          "allowUnauthorizedCerts": true
         }
       },
-      "id": "a2000000-0000-0000-0000-000000000006",
-      "name": "Job Done?",
-      "type": "n8n-nodes-base.if",
+      "name": "\ud83d\ude80 Create K8s Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4320,
+        1376
+      ],
+      "id": "e4b67c3a-805c-4067-8824-868fea20877a"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Poll verify job: check job status OR pod logs for VERIFICATION_PASSED\nconst buildOutput = $('Build K8s Job').first().json;\nconst jobName = buildOutput.jobName;\nconst verifyMode = buildOutput.verifyMode || 'simple';\nconst K8S = 'https://host.docker.internal:51574';\nconst TOKEN = 'K8S_TOKEN_REDACTED';\nconst maxWait = 600;\nconst pollInterval = 15;\n\nlet elapsed = 0;\nlet jobStatus = null;\nlet podName = 'unknown';\nlet logs = 'No logs available';\n\nwhile (elapsed < maxWait) {\n  try {\n    const jobResp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: K8S + '/apis/batch/v1/namespaces/dev-team/jobs/' + jobName,\n      headers: { 'Authorization': TOKEN },\n      skipSslCertificateValidation: true,\n      returnFullResponse: true,\n    });\n    const job = typeof jobResp.body === 'string' ? JSON.parse(jobResp.body) : jobResp.body;\n\n    // Normal completion or failure\n    if ((job.status?.succeeded || 0) >= 1 || (job.status?.failed || 0) >= 1) {\n      jobStatus = job.status;\n      break;\n    }\n\n    // Check running pod logs for VERIFICATION_PASSED (keep-alive mode)\n    try {\n      const podResp = await this.helpers.httpRequest({\n        method: 'GET',\n        url: K8S + '/api/v1/namespaces/dev-team/pods?labelSelector=job-name=' + jobName,\n        headers: { 'Authorization': TOKEN },\n        skipSslCertificateValidation: true,\n        returnFullResponse: true,\n      });\n      const pods = typeof podResp.body === 'string' ? JSON.parse(podResp.body) : podResp.body;\n      const runPod = pods.items?.find(p => p.status?.phase === 'Running');\n      if (runPod) {\n        podName = runPod.metadata.name;\n        const logResp = await this.helpers.httpRequest({\n          method: 'GET',\n          url: K8S + '/api/v1/namespaces/dev-team/pods/' + podName + '/log?tailLines=60',\n          headers: { 'Authorization': TOKEN },\n          skipSslCertificateValidation: true,\n          returnFullResponse: true,\n        });\n        const tail = typeof logResp.body === 'string' ? logResp.body : JSON.stringify(logResp.body);\n        if (tail.indexOf('VERIFICATION_PASSED') !== -1) {\n          logs = tail;\n          jobStatus = { succeeded: 1 };\n          break;\n        }\n      }\n    } catch (e) {}\n  } catch (e) {}\n\n  await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));\n  elapsed += pollInterval;\n}\n\nif (!jobStatus) jobStatus = { failed: 1, timedOut: true };\n\n// Read full logs\nif (podName === 'unknown') {\n  try {\n    const podResp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: K8S + '/api/v1/namespaces/dev-team/pods?labelSelector=job-name=' + jobName,\n      headers: { 'Authorization': TOKEN },\n      skipSslCertificateValidation: true,\n      returnFullResponse: true,\n    });\n    const pods = typeof podResp.body === 'string' ? JSON.parse(podResp.body) : podResp.body;\n    if (pods.items?.length > 0) podName = pods.items[0].metadata.name;\n  } catch (e) {}\n}\nif (podName !== 'unknown' && logs === 'No logs available') {\n  try {\n    const logResp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: K8S + '/api/v1/namespaces/dev-team/pods/' + podName + '/log?tailLines=200',\n      headers: { 'Authorization': TOKEN },\n      skipSslCertificateValidation: true,\n      returnFullResponse: true,\n    });\n    logs = typeof logResp.body === 'string' ? logResp.body : JSON.stringify(logResp.body);\n  } catch (e) {\n    logs = 'Error reading logs: ' + e.message;\n  }\n}\n\nreturn { json: { ...buildOutput, status: jobStatus, podName, verificationLogs: logs } };"
+      },
+      "name": "Wait & Read Verify",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [3520, 960]
+      "position": [
+        4544,
+        1376
+      ],
+      "id": "180e30d1-7486-4c11-b1bd-f40460b231c6",
+      "webhookId": "bf9156f6-1cb4-431a-b43e-93cba20c2095"
     },
     {
       "parameters": {
-        "url": "={{ $env.K8S_API_URL }}/api/v1/namespaces/{{ $('Build K8s Job Manifest').first().json.k8sNamespace }}/pods?labelSelector=job-name={{ $('Build K8s Job Manifest').first().json.jobName }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.K8S_TOKEN }}" }
-          ]
-        },
-        "options": { "allowUnauthorizedCerts": true }
+        "jsCode": "const prev = $('Build K8s Job').first().json;\nconst pollResult = $input.first().json;\n\nconst logText = pollResult.verificationLogs || 'No logs';\nconst succeeded = (pollResult.status?.succeeded || 0) >= 1;\nconst retryCount = prev.retryCount || 0;\nconst canRetry = prev.mode === 'auto' && retryCount < prev.maxRetries;\n\nreturn {\n  json: {\n    ...prev,\n    verificationPassed: succeeded,\n    verificationLogs: String(logText).slice(0, 3000),\n    retryCount: succeeded ? retryCount : retryCount + 1,\n    shouldRetryVerification: !succeeded && canRetry,\n    verifyMode: prev.verifyMode || 'simple',\n    podName: pollResult.podName,\n  }\n};"
       },
-      "id": "a2000000-0000-0000-0000-000000000007",
-      "name": "Get Pod Name",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3740, 860]
-    },
-    {
-      "parameters": {
-        "url": "={{ $env.K8S_API_URL }}/api/v1/namespaces/{{ $('Build K8s Job Manifest').first().json.k8sNamespace }}/pods/{{ $json.items[0].metadata.name }}/log?tailLines=200",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.K8S_TOKEN }}" }
-          ]
-        },
-        "options": { "allowUnauthorizedCerts": true, "response": { "response": { "responseFormat": "text" } } }
-      },
-      "id": "a2000000-0000-0000-0000-000000000008",
-      "name": "Read Job Logs",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3960, 860]
-    },
-    {
-      "parameters": {
-        "jsCode": "const jobStatus = $('Check Job Status').first().json;\nconst logsRaw = $input.first().json;\nconst prev = $('Build K8s Job Manifest').first().json;\n\n// Logs may be a string or in .data\nconst logs = typeof logsRaw === 'string' ? logsRaw : (logsRaw.data || JSON.stringify(logsRaw));\n\nconst succeeded = (jobStatus.status?.succeeded || 0) >= 1;\nconst retryCount = prev.retryCount || 0;\nconst canRetry = prev.mode === 'ralph' && retryCount < prev.maxRetries;\n\nreturn {\n  json: {\n    ...prev,\n    verificationPassed: succeeded,\n    verificationLogs: typeof logs === 'string' ? logs.slice(0, 3000) : JSON.stringify(logs).slice(0, 3000),\n    retryCount: succeeded ? retryCount : retryCount + 1,\n    shouldRetryVerification: !succeeded && canRetry\n  }\n};"
-      },
-      "id": "a2000000-0000-0000-0000-000000000009",
       "name": "Parse Verification",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4180, 860]
+      "position": [
+        4832,
+        1376
+      ],
+      "id": "08abdb4f-b0d8-4e15-9fb2-d38cc9aaea77"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "verify-pass",
               "leftValue": "={{ $json.verificationPassed }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
-      "id": "a2000000-0000-0000-0000-000000000010",
       "name": "Verification Pass?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [4400, 860]
+      "position": [
+        5120,
+        1472
+      ],
+      "id": "d60cb117-1f54-41a5-841d-50faa1cf6452"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst channelId = $('Parse Command').first().json.channelId;\nreturn {\n  json: {\n    channelId,\n    result: '**Verification Failed** \u2014 could not pass build/test\\n\\n' +\n      '**Mode:** `' + (item.verifyMode || 'simple') + '`\\n' +\n      '**Image:** `' + (item.verifyImage || 'unknown') + '`\\n' +\n      '**Branch:** `' + (item.branch_name || 'unknown') + '`\\n' +\n      '**Retries exhausted:** ' + (item.retryCount || 0) + '/3\\n\\n' +\n      '**Last logs:**\\n```\\n' + (item.verificationLogs || '(no logs)').slice(-1800) + '\\n```'\n  }\n};"
+      },
+      "name": "Verification Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5568,
+        1808
+      ],
+      "id": "b14b9653-84df-43d7-8a34-a91efc6c0bdf"
+    },
+    {
+      "parameters": {
+        "content": "## PHASE 4.5: K8s Verification",
+        "height": 60,
+        "width": 300,
+        "color": 2
+      },
+      "name": "Phase K8s",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        5440,
+        1072
+      ],
+      "id": "68e2292f-49ef-4c71-9d30-c74ab7af533c"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst repo = item.repository;\nconst jobName = 'analyze-' + repo.replace(/\\//g, '-') + '-' + Date.now();\nconst script = \"git clone --depth 1 https://GITHUB_TOKEN_REDACTED@github.com/$REPO.git /workspace/repo && cd /workspace/repo && LANG_D=unknown && FW= && DEPS= && TEST_FW= && TEST_CMD= && VERIFY_MODE=simple && HAS_COMPOSE=false && HAS_DOCKERFILE=false && SERVICES= && ENV_VARS= && HEALTH= && LANG_VERSION= && if [ -f Cargo.toml ]; then LANG_D=rust; DEPS=$(grep -E '^\\\\w' Cargo.toml | head -20 | tr '\\\\n' ', '); grep -qi actix Cargo.toml && FW=actix-web; grep -qi axum Cargo.toml && FW=axum; grep -qi rocket Cargo.toml && FW=rocket; TEST_FW=\\\"cargo test\\\"; TEST_CMD=\\\"cargo test\\\"; if [ -f rust-toolchain.toml ]; then LANG_VERSION=$(grep 'channel' rust-toolchain.toml | head -1 | sed 's/.*=[ \\\"]*//;s/[\\\"]*$//'); elif [ -f rust-toolchain ]; then LANG_VERSION=$(cat rust-toolchain | tr -d '[:space:]'); fi; if [ -z \\\"$LANG_VERSION\\\" ]; then LANG_VERSION=$(grep 'rust-version' Cargo.toml 2>/dev/null | head -1 | sed 's/.*=[ \\\"]*//;s/[\\\"]*$//'); fi; elif [ -f requirements.txt ] || [ -f pyproject.toml ]; then LANG_D=python; DEPS=$(head -20 requirements.txt 2>/dev/null | tr '\\\\n' ', '); grep -qi flask requirements.txt 2>/dev/null && FW=flask; grep -qi fastapi requirements.txt 2>/dev/null && FW=fastapi; grep -qi django requirements.txt 2>/dev/null && FW=django; TEST_FW=pytest; TEST_CMD=\\\"pytest tests/ -v\\\"; if [ -f .python-version ]; then LANG_VERSION=$(cat .python-version | head -1 | tr -d '[:space:]'); elif [ -f pyproject.toml ]; then LANG_VERSION=$(grep 'requires-python' pyproject.toml 2>/dev/null | head -1 | sed 's/.*>=[ \\\"]*//;s/[\\\",].*$//'); fi; elif [ -f package.json ]; then LANG_D=javascript; DEPS=$(python3 -c \\\"import json;d=json.load(open('package.json'));print(','.join(list(d.get('dependencies',{}).keys())[:20]))\\\" 2>/dev/null); grep -q react package.json && FW=react; grep -q express package.json && FW=express; grep -q next package.json && FW=nextjs; TEST_FW=jest; TEST_CMD=\\\"npm test\\\"; if [ -f .nvmrc ]; then LANG_VERSION=$(cat .nvmrc | tr -d '[:space:]' | sed 's/^v//'); elif [ -f .node-version ]; then LANG_VERSION=$(cat .node-version | tr -d '[:space:]' | sed 's/^v//'); else LANG_VERSION=$(python3 -c \\\"import json;d=json.load(open('package.json'));print(d.get('engines',{}).get('node',''))\\\" 2>/dev/null | sed 's/[>=^~ ]//g' | cut -d. -f1); fi; elif [ -f go.mod ]; then LANG_D=go; TEST_FW=\\\"go test\\\"; TEST_CMD=\\\"go test ./...\\\"; LANG_VERSION=$(grep '^go ' go.mod | awk '{print $2}'); elif [ -f Gemfile ]; then LANG_D=ruby; DEPS=$(head -20 Gemfile | tr '\\\\n' ', '); TEST_FW=rspec; TEST_CMD=\\\"bundle exec rspec\\\"; if [ -f .ruby-version ]; then LANG_VERSION=$(cat .ruby-version | tr -d '[:space:]'); fi; fi && if [ -f docker-compose.yml ] || [ -f docker-compose.yaml ]; then HAS_COMPOSE=true; VERIFY_MODE=full-stack; COMPOSE_FILE=$(ls docker-compose.yml docker-compose.yaml 2>/dev/null | head -1); SERVICES=$(grep \\\"image:\\\" \\\"$COMPOSE_FILE\\\" 2>/dev/null | awk '{print $2}' | tr '\\\\n' ', '); ENV_VARS=$(grep -E '^\\\\s+[A-Z_]+:' \\\"$COMPOSE_FILE\\\" 2>/dev/null | awk -F: '{print $1}' | tr -d ' ' | tr '\\\\n' ', ' | head -c 200); fi && if [ -f Dockerfile ]; then HAS_DOCKERFILE=true; fi && HEALTH=$(grep -rl 'health\\\\|healthcheck' src/ 2>/dev/null | head -1) && TEST_FILES=$(find . -maxdepth 3 \\\\( -name '*_test.*' -o -name 'test_*' -o -name '*.test.*' -o -name '*.spec.*' \\\\) 2>/dev/null | grep -v node_modules | grep -v target | head -10 | tr '\\\\n' ', ') && KEY_CONTENT=\\\"\\\" && for f in $(find . -maxdepth 3 \\\\( -name '*.py' -o -name '*.js' -o -name '*.ts' -o -name '*.go' -o -name '*.rs' \\\\) ! -path '*/node_modules/*' ! -path '*/target/*' ! -path '*test*' | head -5); do C=$(head -60 \\\"$f\\\" | python3 -c \\\"import sys,json;print(json.dumps(sys.stdin.read()))\\\" 2>/dev/null || echo '\\\"\\\"'); KEY_CONTENT=\\\"${KEY_CONTENT}\\\\\\\"$f\\\\\\\": $C,\\\"; done && KEY_CONTENT=\\\"${KEY_CONTENT%,}\\\" && printf '{\\\"language\\\":\\\"%s\\\",\\\"framework\\\":\\\"%s\\\",\\\"dependencies\\\":\\\"%s\\\",\\\"testFramework\\\":\\\"%s\\\",\\\"testCommand\\\":\\\"%s\\\",\\\"testFiles\\\":\\\"%s\\\",\\\"verifyMode\\\":\\\"%s\\\",\\\"hasDockerCompose\\\":%s,\\\"hasDockerfile\\\":%s,\\\"services\\\":\\\"%s\\\",\\\"envVars\\\":\\\"%s\\\",\\\"healthCheck\\\":\\\"%s\\\",\\\"langVersion\\\":\\\"%s\\\",\\\"keyFiles\\\":{%s}}' \\\"$LANG_D\\\" \\\"$FW\\\" \\\"$DEPS\\\" \\\"$TEST_FW\\\" \\\"$TEST_CMD\\\" \\\"$TEST_FILES\\\" \\\"$VERIFY_MODE\\\" \\\"$HAS_COMPOSE\\\" \\\"$HAS_DOCKERFILE\\\" \\\"$SERVICES\\\" \\\"$ENV_VARS\\\" \\\"$HEALTH\\\" \\\"$LANG_VERSION\\\" \\\"$KEY_CONTENT\\\"\".replace('$REPO', repo);\n\nconst manifest = {\n  apiVersion: 'batch/v1',\n  kind: 'Job',\n  metadata: { name: jobName, namespace: 'dev-team', labels: { app: 'dev-team-analyze' } },\n  spec: {\n    ttlSecondsAfterFinished: 1800,\n    backoffLimit: 0,\n    activeDeadlineSeconds: 120,\n    template: {\n      metadata: { labels: { app: 'dev-team-analyze', 'job-name': jobName } },\n      spec: {\n        restartPolicy: 'Never',\n        containers: [{\n          name: 'analyze',\n          image: 'dev-team-runner:latest',\n          imagePullPolicy: 'IfNotPresent',\n          command: ['/bin/sh', '-c'],\n          args: [script],\n          resources: { limits: { cpu: '500m', memory: '512Mi' }, requests: { cpu: '250m', memory: '256Mi' } }\n        }]\n      }\n    }\n  }\n};\n\nreturn { json: { ...item, analysisJobName: jobName, analysisManifest: manifest } };"
+      },
+      "name": "Build Analysis Job",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        288
+      ],
+      "id": "c5b1d8c5-10bb-41e8-ab33-09f92cbab3b4"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://host.docker.internal:51574/apis/batch/v1/namespaces/dev-team/jobs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "K8S_TOKEN_REDACTED"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.analysisManifest) }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "name": "\ud83d\udd0d Run Analysis Job",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1696,
+        288
+      ],
+      "id": "4c23f26c-0c68-4b9f-bfd0-7ff49e9e867f"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Inline polling: wait for analysis job, get pod, read logs\nconst buildOutput = $('Build Analysis Job').first().json;\nconst jobName = buildOutput.analysisJobName;\nconst K8S = 'https://host.docker.internal:51574';\nconst TOKEN = 'K8S_TOKEN_REDACTED';\nconst maxWait = 300;\nconst pollInterval = 10;\n\nlet elapsed = 0;\nlet jobStatus = null;\n\nwhile (elapsed < maxWait) {\n  try {\n    const jobResp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: K8S + '/apis/batch/v1/namespaces/dev-team/jobs/' + jobName,\n      headers: { 'Authorization': TOKEN },\n      skipSslCertificateValidation: true,\n      returnFullResponse: true,\n    });\n    const job = typeof jobResp.body === 'string' ? JSON.parse(jobResp.body) : jobResp.body;\n    if ((job.status?.succeeded || 0) >= 1 || (job.status?.failed || 0) >= 1) {\n      jobStatus = job.status;\n      break;\n    }\n  } catch (e) {\n    // Job might not be registered yet, keep polling\n  }\n  await new Promise(resolve => setTimeout(resolve, pollInterval * 1000));\n  elapsed += pollInterval;\n}\n\nif (!jobStatus) jobStatus = { failed: 1, timedOut: true };\n\nlet podName = 'unknown';\ntry {\n  const podResp = await this.helpers.httpRequest({\n    method: 'GET',\n    url: K8S + '/api/v1/namespaces/dev-team/pods?labelSelector=job-name=' + jobName,\n    headers: { 'Authorization': TOKEN },\n    skipSslCertificateValidation: true,\n    returnFullResponse: true,\n  });\n  const pods = typeof podResp.body === 'string' ? JSON.parse(podResp.body) : podResp.body;\n  if (pods.items && pods.items.length > 0) podName = pods.items[0].metadata.name;\n} catch (e) {}\n\nlet logs = '{}';\nif (podName !== 'unknown') {\n  try {\n    const logResp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: K8S + '/api/v1/namespaces/dev-team/pods/' + podName + '/log?tailLines=500',\n      headers: { 'Authorization': TOKEN },\n      skipSslCertificateValidation: true,\n      returnFullResponse: true,\n    });\n    logs = typeof logResp.body === 'string' ? logResp.body : JSON.stringify(logResp.body);\n  } catch (e) {\n    logs = '{\"error\": \"' + e.message + '\"}';\n  }\n}\n\nreturn { json: { ...buildOutput, status: jobStatus, podName, analysisLogs: logs } };"
+      },
+      "name": "Wait & Read Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        288
+      ],
+      "id": "52240640-7dda-4e30-8fcc-83ff9e36a6c4",
+      "webhookId": "4eec8125-4f4f-42e1-abbf-624a4cf124ea"
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Build Analysis Job').first().json;\nconst pollResult = $input.first().json;\nconst logText = pollResult.analysisLogs || '{}';\n\nlet analysis = {};\ntry {\n  const jsonMatch = logText.match(/\\{[\\s\\S]*\\}$/);\n  const jsonStr = jsonMatch ? jsonMatch[0] : logText;\n  analysis = JSON.parse(jsonStr);\n} catch (e) {\n  // JSON is malformed (unescaped quotes in dependency strings) \u2014 extract fields via regex\n  const extract = (key, fallback) => {\n    const m = logText.match(new RegExp('\"' + key + '\":\"([^\"]*)\"'));\n    return m ? m[1] : fallback;\n  };\n  const extractBool = (key) => {\n    const m = logText.match(new RegExp('\"' + key + '\":(true|false)'));\n    return m ? m[1] === 'true' : false;\n  };\n\n  analysis = {\n    language: extract('language', 'unknown'),\n    framework: extract('framework', ''),\n    dependencies: extract('dependencies', ''),\n    testFramework: extract('testFramework', ''),\n    testCommand: extract('testCommand', ''),\n    testFiles: extract('testFiles', ''),\n    verifyMode: extract('verifyMode', 'simple'),\n    hasDockerCompose: extractBool('hasDockerCompose'),\n    hasDockerfile: extractBool('hasDockerfile'),\n    services: extract('services', ''),\n    envVars: extract('envVars', ''),\n    healthCheck: extract('healthCheck', ''),\n    langVersion: extract('langVersion', ''),\n  };\n}\n\nconst enrichedTree = context.fileTree +\n  '\\n\\n--- Codebase Analysis ---' +\n  '\\nLanguage: ' + (analysis.language || 'unknown') +\n  '\\nFramework: ' + (analysis.framework || 'none') +\n  '\\nDependencies: ' + (analysis.dependencies || 'none') +\n  '\\nTest framework: ' + (analysis.testFramework || 'none') +\n  '\\nTest command: ' + (analysis.testCommand || 'none') +\n  '\\nTest files: ' + (analysis.testFiles || 'none') +\n  '\\nVerify mode: ' + (analysis.verifyMode || 'simple') +\n  '\\nDocker Compose: ' + (analysis.hasDockerCompose ? 'yes - services: ' + (analysis.services || '') : 'no') +\n  '\\nDockerfile: ' + (analysis.hasDockerfile ? 'yes' : 'no');\n\nlet keyFilesContext = '';\nif (analysis.keyFiles) {\n  for (const [path, content] of Object.entries(analysis.keyFiles)) {\n    keyFilesContext += '\\n\\n--- ' + path + ' ---\\n' + String(content).slice(0, 500);\n  }\n}\n\nreturn {\n  json: {\n    ...context,\n    codebaseAnalysis: analysis,\n    fileTree: enrichedTree + keyFilesContext\n  }\n};"
+      },
+      "name": "Enrich Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2144,
+        288
+      ],
+      "id": "3a17d6b8-47dd-46d1-898c-435a151c69bf"
+    },
+    {
+      "parameters": {
+        "content": "## \ud83d\udd0d Codebase Analysis (K8s Job)\nClones repo, detects language/framework,\nreads key files, feeds context to Architect",
+        "height": 80,
+        "width": 340,
+        "color": 2
+      },
+      "name": "Phase Analysis",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        864,
+        192
+      ],
+      "id": "22980657-36a3-439f-bdac-020db5448d7a"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Parse Command').first().json.channelId }}",
+          "mode": "id"
+        },
+        "content": "=**Codebase Analysis Complete**\n\n**Language:** `{{ $json.codebaseAnalysis?.language || 'unknown' }}` {{ $json.codebaseAnalysis?.langVersion ? '(v' + $json.codebaseAnalysis.langVersion + ')' : '' }}\n**Framework:** `{{ $json.codebaseAnalysis?.framework || 'none' }}`\n**Verify mode:** `{{ $json.codebaseAnalysis?.verifyMode || 'simple' }}`{{ $json.codebaseAnalysis?.hasDockerCompose ? ' (docker-compose detected)' : '' }}{{ $json.codebaseAnalysis?.hasDockerfile ? ' | Dockerfile present' : '' }}\n**Dependencies:** `{{ ($json.codebaseAnalysis?.dependencies || 'none').slice(0, 200) }}`\n**Test framework:** `{{ $json.codebaseAnalysis?.testFramework || 'none' }}`\n**Test command:** `{{ $json.codebaseAnalysis?.testCommand || 'none' }}`\n**Test files:** `{{ ($json.codebaseAnalysis?.testFiles || 'none').slice(0, 200) }}`{{ $json.codebaseAnalysis?.services ? '\\n**Compose services:** `' + $json.codebaseAnalysis.services + '`' : '' }}\n\nStarting Architect agent...",
+        "options": {}
+      },
+      "name": "Report: Analysis",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2488,
+        288
+      ],
+      "id": "2479f614-8024-4174-9241-abea8c3268c5",
+      "webhookId": "951a7636-40b1-43c4-951a-2c7c736cf2a1",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Parse Command').first().json.channelId }}",
+          "mode": "id"
+        },
+        "content": "={{ $json.verdict === 'PASS' ? '\u2705' : '\u274c' }} **Step {{ $json.step_id }}/{{ $json.total_steps || '?' }}** \u2014 `{{ $json.file }}`\n**Action:** {{ ($json.action || $json.change_description || 'modify').slice(0, 120) }}\n**Review:** {{ $json.verdict === 'PASS' ? 'Approved by Reviewer' : 'Rejected \u2014 ' + ($json.feedback || 'no details').slice(0, 300) }}",
+        "options": {}
+      },
+      "name": "Report: Step",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        5792,
+        728
+      ],
+      "id": "6fc00cdf-d571-4d91-9c31-b65bf12ba570",
+      "webhookId": "d4c1b7c5-73eb-4f80-97c1-c669bcbbeccc",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Parse Command').first().json.channelId }}",
+          "mode": "id"
+        },
+        "content": "={{ $json.verificationPassed ? '\u2705' : '\u274c' }} **Build/Test Verification** \u2014 {{ $json.verificationPassed ? 'PASSED' : 'FAILED' }}\n\n**Mode:** `{{ $json.verifyMode || 'simple' }}`\n**Image:** `{{ $json.verifyImage || 'unknown' }}`\n**Branch:** `{{ $json.branch_name || 'unknown' }}`\n```\n{{ ($json.verificationLogs || '(no logs)').slice(-1500) }}\n```",
+        "options": {}
+      },
+      "name": "Report: Verification",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        5120,
+        1040
+      ],
+      "id": "f056fa2c-c6e8-42cb-a346-2bd583bd2a2c",
+      "webhookId": "d17fcba3-afd4-42b2-9557-a0885c47f8d1",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "name": "Wikipedia (Executor)",
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        3856,
+        756
+      ],
+      "id": "5f984d54-00df-4a08-9155-d589718e854c"
+    },
+    {
+      "parameters": {},
+      "name": "Calculator (Executor)",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        3984,
+        756
+      ],
+      "id": "232820e9-356d-488d-80c6-550be37ababa"
+    },
+    {
+      "parameters": {
+        "url": "="
+      },
+      "name": "HTTP Request (Architect)",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        2368,
+        808
+      ],
+      "id": "5e4b4a7a-d7a7-4d27-b855-e31685f6765d"
+    },
+    {
+      "parameters": {},
+      "name": "Wikipedia (Architect)",
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        2496,
+        808
+      ],
+      "id": "3a0078e0-7908-421f-85da-3f88e0f66afd"
+    },
+    {
+      "parameters": {},
+      "name": "Calculator (Architect)",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        2624,
+        808
+      ],
+      "id": "26471dfa-870b-4c3a-8310-8c3fd3b48496"
+    },
+    {
+      "parameters": {
+        "url": "="
+      },
+      "name": "HTTP Request (Reviewer)",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        4840,
+        756
+      ],
+      "id": "ee69fc22-f54a-46f4-aecf-d717fa03317b"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst first = items[0].json;\n\nif (first.step_index !== 0) {\n  return [];\n}\n\n// Build step list\nconst allSteps = items.map((it, i) =>\n  `  ${i + 1}. \\`${it.json.file || 'unknown'}\\` \u2014 ${(it.json.action || it.json.change_description || 'modify').slice(0, 80)}`\n).join('\\n');\n\nreturn {\n  json: {\n    channelId: first.channelId || $('Parse Command').first().json.channelId,\n    planMessage: '**Architect Plan Ready**\\n' +\n      (first.plan_summary || 'Plan created') + '\\n\\n' +\n      '**Branch:** `' + first.branch_name + '`\\n' +\n      '**Steps:** ' + (first.total_steps || items.length) + '\\n' +\n      allSteps + '\\n\\n' +\n      'Starting Executor...'\n  }\n};"
+      },
+      "name": "Prep Plan Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3056,
+        464
+      ],
+      "id": "a9f6d98d-4777-4c2e-8668-453e20e333aa"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $json.channelId }}",
+          "mode": "id"
+        },
+        "content": "={{ $json.planMessage }}",
+        "options": {}
+      },
+      "name": "Send Plan Report",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        464
+      ],
+      "id": "6f9ecf78-0aa8-4964-bfed-ae355f93c65c",
+      "webhookId": "ae387beb-4cbe-4ab9-9866-2ccf5142f03f",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "can-retry-verify",
               "leftValue": "={{ $json.shouldRetryVerification }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
-      "id": "a2000000-0000-0000-0000-000000000011",
       "name": "Retry Verification?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [4400, 1060]
+      "position": [
+        5344,
+        1712
+      ],
+      "id": "0d712ee7-b5ca-4ea7-8703-c59e700be73e"
     },
     {
       "parameters": {
-        "jsCode": "// Feed verification errors back to the executor for all steps\nconst item = $input.first().json;\nconst planSteps = $('Parse Plan → Split Steps').all().map(i => i.json);\n\nreturn planSteps.map(stepItem => ({\n  json: {\n    ...stepItem,\n    retryCount: item.retryCount,\n    reviewerFeedback: 'VERIFICATION FAILED. Fix the code so these commands pass:\\n' +\n      'Commands: ' + (item.verification.commands || []).join(', ') + '\\n\\n' +\n      'Error output:\\n' + (item.verificationLogs || '(no logs)').slice(0, 2000)\n  }\n}));"
+        "jsCode": "// Feed verification test errors back to the executor for all steps\nconst item = $input.first().json;\nconst planSteps = $('Parse Plan \u2192 Split Steps').all().map(i => i.json);\n\nconst feedback = 'VERIFICATION FAILED. The K8s test run produced these errors. Fix the code so tests pass:\\n\\n' +\n  (item.verificationLogs || '(no logs)').slice(0, 2000);\n\n// Re-emit all steps with the test failure feedback\nreturn planSteps.map(stepItem => ({\n  json: {\n    ...stepItem,\n    retryCount: item.retryCount,\n    reviewerFeedback: feedback\n  }\n}));"
       },
-      "id": "a2000000-0000-0000-0000-000000000012",
       "name": "Feed Errors to Executor",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4620, 960]
+      "position": [
+        5568,
+        1616
+      ],
+      "id": "f07b651d-b9b9-447d-8e27-411439496b40"
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nreturn {\n  json: {\n    channelId: item.channelId,\n    finalMsg: item.message + '\\n\\n❌ **Verification failed** (retries exhausted)\\n```\\n' + (item.verificationLogs || '(no logs)').slice(0, 1500) + '\\n```'\n  }\n};"
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Parse Command').first().json.channelId }}",
+          "mode": "id"
+        },
+        "content": "=**Retrying verification** (attempt {{ $json.retryCount }}/3)\nPrevious run failed \u2014 feeding error logs back to Executor for fixes.\n**Mode:** `{{ $json.verifyMode || 'simple' }}` | **Image:** `{{ $json.verifyImage || 'unknown' }}`",
+        "options": {}
       },
-      "id": "a2000000-0000-0000-0000-000000000013",
-      "name": "Verification Failed Final",
+      "name": "Report: Retry",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        5568,
+        1424
+      ],
+      "id": "a6b51c98-9a16-4c27-bb96-bdb7e51db244",
+      "webhookId": "2e5d5c0d-dca3-4ead-a226-06a88bce60e2",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "="
+      },
+      "name": "HTTP Request (Architect)1",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        4112,
+        756
+      ],
+      "id": "36247fd8-d73d-4c32-9047-9201d56df50c"
+    },
+    {
+      "parameters": {
+        "model": "grok-4.20-0309-reasoning",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatXAiGrok",
+      "typeVersion": 1,
+      "position": [
+        3728,
+        756
+      ],
+      "id": "14535eb7-56b2-4fb2-8e70-ba15b7275b09",
+      "name": "xAI Grok 4.2 Reasoning",
+      "credentials": {
+        "xAiApi": {
+          "id": "r1j5JIqANpxmCttH",
+          "name": "xAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "grok-4.20-multi-agent-0309",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatXAiGrok",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        2032
+      ],
+      "id": "3f14d8be-2b0f-4d44-84dd-811da3899268",
+      "name": "xAI Grok 4.2 multi-agent",
+      "credentials": {
+        "xAiApi": {
+          "id": "r1j5JIqANpxmCttH",
+          "name": "xAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-deployment",
+              "leftValue": "={{ $json.deployment?.type }}",
+              "rightValue": "web-server",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        5344,
+        1208
+      ],
+      "id": "should-deploy-001",
+      "name": "Should Deploy?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst dep = item.deployment;\nconst repo = item.repository;\nconst repoSlug = repo.replace(/\\//g, '-').toLowerCase();\nconst deployName = 'deploy-' + repoSlug;\nconst port = dep.port || 8080;\nconst healthEndpoint = dep.health_endpoint || '/';\n\n// The verify pod is already running the server \u2014 just create a Service to expose it\n// The Service selector matches the verify job's pod labels\nconst verifyJobName = item.jobName; // from Build K8s Job\n\nconst service = {\n  apiVersion: 'v1',\n  kind: 'Service',\n  metadata: { name: deployName, namespace: 'dev-team' },\n  spec: {\n    type: 'LoadBalancer',\n    selector: { 'job-name': verifyJobName },\n    ports: [{ port: port, targetPort: port }]\n  }\n};\n\n// No deployment manifest needed \u2014 reuse the verify pod\nreturn { json: { ...item, deployName, deployPort: port, healthEndpoint, deploymentManifest: null, serviceManifest: service } };"
+      },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [4620, 1160]
+      "position": [
+        5568,
+        1136
+      ],
+      "id": "build-deploy-001",
+      "name": "Build Deploy Manifests"
     },
     {
       "parameters": {
-        "content": "## 🤖 Dev Team Orchestrator\n\nSingle-workflow implementation of the Architect → Executor → Reviewer → Verify pipeline.\n\n**Discord Commands:**\n- `$team <task> in owner/repo` — Single pass\n- `$ralph <task> in owner/repo` — Self-healing loop (3 retries)\n\n**Setup:**\n1. Replace CREDENTIAL_ID placeholders\n2. Set env vars: ANTHROPIC_API_KEY, OLLAMA_CODE_MODEL\n3. Ensure Ollama is running (docker-compose.override.yaml)\n4. Add GitHub credentials in n8n\n5. Set up K8s: kubectl apply -f k8s/setup.yaml\n6. Set K8S_API_URL, K8S_TOKEN, K8S_NAMESPACE env vars",
-        "height": 320,
-        "width": 500,
-        "color": 5
+        "jsCode": "// No separate deploy pod needed \u2014 verify pod is already serving\nreturn { json: $input.first().json };"
       },
-      "id": "a1000000-0000-0000-0000-000000000099",
-      "name": "Sticky Note",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [-20, 60]
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5792,
+        1136
+      ],
+      "id": "create-deploy-001",
+      "name": "\ud83d\ude80 Create K8s Deploy",
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "content": "## PHASE 1: Discord Input",
-        "height": 80,
-        "width": 300,
-        "color": 1
+        "method": "POST",
+        "url": "=https://host.docker.internal:51574/api/v1/namespaces/dev-team/services",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "K8S_TOKEN_REDACTED"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Build Deploy Manifests').first().json.serviceManifest) }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
       },
-      "id": "note-phase1",
-      "name": "Phase 1",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [-20, 330]
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6016,
+        1136
+      ],
+      "id": "create-service-001",
+      "name": "\ud83c\udf10 Create K8s Service",
+      "continueOnFail": true
     },
     {
       "parameters": {
-        "content": "## PHASE 2: Architect (Planning)",
-        "height": 80,
-        "width": 300,
-        "color": 3
+        "jsCode": "const item = $input.first().json;\nconst dep = $('Build Deploy Manifests').first().json;\nconst port = dep.deployPort;\nconst healthEndpoint = dep.healthEndpoint;\n\n// Service was just created \u2014 Docker Desktop assigns LoadBalancer IP instantly\n// Wait briefly for it to propagate\nawait new Promise(r => setTimeout(r, 5000));\n\nreturn { json: {\n  ...item,\n  deployReady: true,\n  deployLogs: 'Service created. Server accessible on localhost:' + port,\n  deployUrl: 'http://localhost:' + port,\n  healthUrl: 'http://localhost:' + port + healthEndpoint,\n} };"
       },
-      "id": "note-phase2",
-      "name": "Phase 2",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [860, 330]
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6240,
+        1136
+      ],
+      "id": "wait-deploy-001",
+      "name": "Wait & Check Deploy"
     },
     {
       "parameters": {
-        "content": "## PHASE 3: Executor → Reviewer Loop",
-        "height": 80,
-        "width": 300,
-        "color": 4
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1095256179225137202",
+          "mode": "list",
+          "cachedResultName": "XD"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Parse Command').first().json.channelId }}",
+          "mode": "id"
+        },
+        "content": "={{ $json.deployReady ? '\u2705' : '\u274c' }} **Server {{ $json.deployReady ? 'Deployed' : 'Failed to Deploy' }}**\n\n{{ $json.deployReady ? '**URL:** ' + $json.deployUrl : '' }}\n{{ $json.deployReady ? '**Health:** ' + $json.healthUrl : '' }}\n**Stack:** {{ $json.deployment?.description || 'unknown' }}\n{{ $json.deployReady ? 'Open ' + $json.deployUrl + ' in your browser to see it running.' : '```\\n' + ($json.deployLogs || '(no logs)') + '\\n```' }}",
+        "options": {}
       },
-      "id": "note-phase3",
-      "name": "Phase 3",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [1740, 330]
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        6464,
+        1136
+      ],
+      "id": "report-deploy-001",
+      "name": "Report: Deploy",
+      "webhookId": "8444dcba-4b26-4e59-9e12-23919996a84d",
+      "credentials": {
+        "discordBotApi": {
+          "id": "rUpBJ7aQKAeJV1bS",
+          "name": "Discord Bot account"
+        }
+      }
     },
     {
       "parameters": {
-        "content": "## PHASE 4: Verification (K8s Job)",
-        "height": 80,
-        "width": 400,
-        "color": 2
+        "promptType": "define",
+        "text": "={{ $json.content.replace(/^\\$(auto|dev)\\s*/i, '') }}",
+        "options": {
+          "systemMessage": "Extract task and repository from a developer command. Respond with ONLY valid JSON, no markdown fences.\n\nExtract:\n- task: what the user wants done (without the repo name)\n- repository: GitHub repo in owner/repo format, or null if not mentioned\n\nExamples:\n\"make a clock page in jonpol01/test-repo\" \u2192 {\"task\":\"make a clock page\",\"repository\":\"jonpol01/test-repo\"}\n\"run tests in jonpol01/visionkit-feedback-server\" \u2192 {\"task\":\"run tests\",\"repository\":\"jonpol01/visionkit-feedback-server\"}\n\"add dark mode\" \u2192 {\"task\":\"add dark mode\",\"repository\":null}\n\"fix login bug for acme/webapp\" \u2192 {\"task\":\"fix login bug\",\"repository\":\"acme/webapp\"}\n\"make a canvas page with only a clock in it jonpol01/test-repo\" \u2192 {\"task\":\"make a canvas page with only a clock in it\",\"repository\":\"jonpol01/test-repo\"}\n\"deploy the api server on myorg/backend\" \u2192 {\"task\":\"deploy the api server\",\"repository\":\"myorg/backend\"}"
+        }
       },
-      "id": "note-phase4",
-      "name": "Phase 4",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [2620, 780]
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        448,
+        100
+      ],
+      "id": "ai-parse-intent-002",
+      "name": "\ud83e\udd16 Parse Intent"
     },
     {
       "parameters": {
-        "content": "## PHASE 5: Results & PR",
-        "height": 80,
-        "width": 300,
-        "color": 6
+        "model": "grok-4-1-fast-reasoning",
+        "options": {
+          "temperature": 0
+        }
       },
-      "id": "note-phase5",
-      "name": "Phase 5",
-      "type": "n8n-nodes-base.stickyNote",
+      "type": "@n8n/n8n-nodes-langchain.lmChatXAiGrok",
       "typeVersion": 1,
-      "position": [2180, 880]
+      "position": [
+        520,
+        324
+      ],
+      "id": "parser-llm-001",
+      "name": "Parser LLM",
+      "credentials": {
+        "xAiApi": {
+          "id": "r1j5JIqANpxmCttH",
+          "name": "xAi account"
+        }
+      }
     }
   ],
   "connections": {
-    "Discord Trigger": {
-      "main": [[{ "node": "Filter $team/$ralph", "type": "main", "index": 0 }]]
-    },
-    "Filter $team/$ralph": {
-      "main": [[{ "node": "Parse Command", "type": "main", "index": 0 }]]
-    },
-    "Parse Command": {
-      "main": [[
-        { "node": "Ack in Discord", "type": "main", "index": 0 },
-        { "node": "Fetch Repo Tree", "type": "main", "index": 0 }
-      ]]
-    },
     "Fetch Repo Tree": {
-      "main": [[{ "node": "Build Context", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Build Context": {
-      "main": [[{ "node": "🧠 Architect (Claude)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Analysis Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "🧠 Architect (Claude)": {
-      "main": [[{ "node": "Parse Plan → Split Steps", "type": "main", "index": 0 }]]
+    "Architect LLM": {
+      "ai_languageModel": [
+        []
+      ]
     },
-    "Parse Plan → Split Steps": {
-      "main": [[
-        { "node": "Create Branch", "type": "main", "index": 0 },
-        { "node": "Loop Steps", "type": "main", "index": 0 }
-      ]]
+    "\ud83e\udde0 Architect": {
+      "main": [
+        [
+          {
+            "node": "Parse Plan \u2192 Split Steps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Create Branch": {
-      "main": [[]]
+    "Parse Plan \u2192 Split Steps": {
+      "main": [
+        [
+          {
+            "node": "Get Main SHA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Steps",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prep Plan Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Loop Steps": {
       "main": [
-        [{ "node": "Summarize Results", "type": "main", "index": 0 }],
-        [{ "node": "Fetch Existing File", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Summarize Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Existing File",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Fetch Existing File": {
-      "main": [[{ "node": "Prep for Executor", "type": "main", "index": 0 }]]
-    },
-    "Prep for Executor": {
-      "main": [[{ "node": "New File? → Ollama", "type": "main", "index": 0 }]]
-    },
-    "New File? → Ollama": {
       "main": [
-        [{ "node": "⚡ Executor (Ollama)", "type": "main", "index": 0 }],
-        [{ "node": "⚡ Executor (Claude)", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Prep for Executor",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "⚡ Executor (Ollama)": {
-      "main": [[{ "node": "Normalize Code", "type": "main", "index": 0 }]]
+    "Prep for Executor": {
+      "main": [
+        [
+          {
+            "node": "\u26a1 Executor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "⚡ Executor (Claude)": {
-      "main": [[{ "node": "Normalize Code", "type": "main", "index": 0 }]]
+    "Executor LLM": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "\u26a1 Executor": {
+      "main": [
+        [
+          {
+            "node": "Normalize Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Normalize Code": {
-      "main": [[{ "node": "Commit to GitHub", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Commit to GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Commit to GitHub": {
-      "main": [[{ "node": "👁 Reviewer (Claude)", "type": "main", "index": 0 }]]
+    "Reviewer LLM": {
+      "ai_languageModel": [
+        []
+      ]
     },
-    "👁 Reviewer (Claude)": {
-      "main": [[{ "node": "Parse Review", "type": "main", "index": 0 }]]
+    "\ud83d\udc41 Reviewer": {
+      "main": [
+        [
+          {
+            "node": "Parse Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Review": {
-      "main": [[{ "node": "Retry? ($ralph)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Retry? ($auto)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Retry? ($ralph)": {
       "main": [
-        [{ "node": "Retry with Feedback", "type": "main", "index": 0 }],
-        [{ "node": "Step Done", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Retry with Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Step Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Retry with Feedback": {
-      "main": [[{ "node": "New File? → Ollama", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Prep for Executor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Step Done": {
-      "main": [[{ "node": "Loop Steps", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Report: Step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Summarize Results": {
-      "main": [[{ "node": "Has Verification?", "type": "main", "index": 0 }]]
-    },
-    "Has Verification?": {
       "main": [
-        [{ "node": "Build K8s Job Manifest", "type": "main", "index": 0 }],
-        [{ "node": "All Passed?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "All Passed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Build K8s Job Manifest": {
-      "main": [[{ "node": "🚀 Create K8s Job", "type": "main", "index": 0 }]]
-    },
-    "🚀 Create K8s Job": {
-      "main": [[{ "node": "Wait 15s", "type": "main", "index": 0 }]]
-    },
-    "Wait 15s": {
-      "main": [[{ "node": "Check Job Status", "type": "main", "index": 0 }]]
-    },
-    "Check Job Status": {
-      "main": [[{ "node": "Job Done?", "type": "main", "index": 0 }]]
-    },
-    "Job Done?": {
+    "All Passed?": {
       "main": [
-        [{ "node": "Get Pod Name", "type": "main", "index": 0 }],
-        [{ "node": "Wait 15s", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Build K8s Job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Final Result (Failed)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Get Pod Name": {
-      "main": [[{ "node": "Read Job Logs", "type": "main", "index": 0 }]]
+    "Create PR": {
+      "main": [
+        [
+          {
+            "node": "Final Result (PR)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "Read Job Logs": {
-      "main": [[{ "node": "Parse Verification", "type": "main", "index": 0 }]]
+    "Parse Command": {
+      "main": [
+        [
+          {
+            "node": "Ack in Discord",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Repo Tree",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Result (PR)": {
+      "main": [
+        [
+          {
+            "node": "Post Result to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final Result (Failed)": {
+      "main": [
+        [
+          {
+            "node": "Post Result to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Input": {
+      "main": [
+        [
+          {
+            "node": "Filter $dev/$auto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit to GitHub": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udc41 Reviewer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Main SHA": {
+      "main": [
+        [
+          {
+            "node": "Create Feature Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Feature Branch": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Flatten Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter $dev/$auto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build K8s Job": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\ude80 Create K8s Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\ude80 Create K8s Job": {
+      "main": [
+        [
+          {
+            "node": "Wait & Read Verify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Verification": {
-      "main": [[{ "node": "Verification Pass?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Report: Verification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Verification Pass?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Verification Pass?": {
       "main": [
-        [{ "node": "Create PR", "type": "main", "index": 0 }],
-        [{ "node": "Retry Verification?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Should Deploy?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retry Verification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification Failed": {
+      "main": [
+        [
+          {
+            "node": "Post Result to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Analysis Job": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\udd0d Run Analysis Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\udd0d Run Analysis Job": {
+      "main": [
+        [
+          {
+            "node": "Wait & Read Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Context": {
+      "main": [
+        [
+          {
+            "node": "Report: Analysis",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "\ud83e\udde0 Architect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report: Step": {
+      "main": [
+        [
+          {
+            "node": "Loop Steps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report: Verification": {
+      "main": [
+        []
+      ]
+    },
+    "Wikipedia (Executor)": {
+      "ai_tool": [
+        [
+          {
+            "node": "\u26a1 Executor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator (Executor)": {
+      "ai_tool": [
+        [
+          {
+            "node": "\u26a1 Executor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request (Architect)": {
+      "ai_tool": [
+        [
+          {
+            "node": "\ud83e\udde0 Architect",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia (Architect)": {
+      "ai_tool": [
+        [
+          {
+            "node": "\ud83e\udde0 Architect",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculator (Architect)": {
+      "ai_tool": [
+        [
+          {
+            "node": "\ud83e\udde0 Architect",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request (Reviewer)": {
+      "ai_tool": [
+        [
+          {
+            "node": "\ud83d\udc41 Reviewer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Plan Report": {
+      "main": [
+        [
+          {
+            "node": "Send Plan Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Plan Report": {
+      "main": [
+        []
       ]
     },
     "Retry Verification?": {
       "main": [
-        [{ "node": "Feed Errors to Executor", "type": "main", "index": 0 }],
-        [{ "node": "Verification Failed Final", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Feed Errors to Executor",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Report: Retry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Verification Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Feed Errors to Executor": {
-      "main": [[{ "node": "Loop Steps", "type": "main", "index": 0 }]]
-    },
-    "Verification Failed Final": {
-      "main": [[{ "node": "Post Result to Discord", "type": "main", "index": 0 }]]
-    },
-    "All Passed?": {
       "main": [
-        [{ "node": "Create PR", "type": "main", "index": 0 }],
-        [{ "node": "No PR (Failures)", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Loop Steps",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Create PR": {
-      "main": [[{ "node": "Add PR Link", "type": "main", "index": 0 }]]
+    "Report: Retry": {
+      "main": [
+        []
+      ]
     },
-    "Add PR Link": {
-      "main": [[{ "node": "Post Result to Discord", "type": "main", "index": 0 }]]
+    "HTTP Request (Architect)1": {
+      "ai_tool": [
+        [
+          {
+            "node": "\u26a1 Executor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     },
-    "No PR (Failures)": {
-      "main": [[{ "node": "Post Result to Discord", "type": "main", "index": 0 }]]
+    "Wait & Read Verify": {
+      "main": [
+        [
+          {
+            "node": "Parse Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait & Read Analysis": {
+      "main": [
+        [
+          {
+            "node": "Enrich Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "xAI Grok 4.2 Reasoning": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "\ud83e\udde0 Architect",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "\ud83d\udc41 Reviewer",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "\u26a1 Executor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "xAI Grok 4.2 multi-agent": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Should Deploy?": {
+      "main": [
+        [
+          {
+            "node": "Build Deploy Manifests",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Deploy Manifests": {
+      "main": [
+        [
+          {
+            "node": "\ud83d\ude80 Create K8s Deploy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83d\ude80 Create K8s Deploy": {
+      "main": [
+        [
+          {
+            "node": "\ud83c\udf10 Create K8s Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83c\udf10 Create K8s Service": {
+      "main": [
+        [
+          {
+            "node": "Wait & Check Deploy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait & Check Deploy": {
+      "main": [
+        [
+          {
+            "node": "Report: Deploy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report: Deploy": {
+      "main": [
+        [
+          {
+            "node": "Create PR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "\ud83e\udd16 Parse Intent": {
+      "main": [
+        [
+          {
+            "node": "Parse Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parser LLM": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "\ud83e\udd16 Parse Intent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter $dev/$auto": {
+      "main": [
+        [
+          {
+            "node": "\ud83e\udd16 Parse Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
-    "executionOrder": "v1"
-  },
-  "staticData": null,
-  "tags": [
-    { "name": "dev-team" }
-  ]
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
 }
