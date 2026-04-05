@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 720" font-family="system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    <marker id="arr" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="720" fill="url(#bg)" rx="12"/>
+
+  <!-- Title -->
+  <text x="550" y="42" text-anchor="middle" fill="#f1f5f9" font-size="22" font-weight="700">Dev Team Orchestrator</text>
+  <text x="550" y="65" text-anchor="middle" fill="#94a3b8" font-size="12">Discord message to running server — fully automated</text>
+
+  <!-- Phase backgrounds -->
+  <rect x="20" y="85" width="220" height="430" rx="10" fill="#1e293b" opacity="0.5"/>
+  <rect x="250" y="85" width="340" height="430" rx="10" fill="#1e293b" opacity="0.5"/>
+  <rect x="600" y="85" width="480" height="430" rx="10" fill="#1e293b" opacity="0.5"/>
+
+  <text x="130" y="105" text-anchor="middle" fill="#a78bfa" font-size="11" font-weight="600">INPUT</text>
+  <text x="420" y="105" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="600">AI AGENTS (xAI Grok)</text>
+  <text x="840" y="105" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">VERIFY + DEPLOY (K8s)</text>
+
+  <!-- Discord -->
+  <rect x="40" y="125" width="180" height="55" rx="10" fill="#5865F2" filter="url(#shadow)"/>
+  <text x="130" y="150" text-anchor="middle" fill="white" font-size="14" font-weight="700">Discord</text>
+  <text x="130" y="168" text-anchor="middle" fill="#c4c9f2" font-size="10">$dev or $auto command</text>
+
+  <!-- Arrow -->
+  <line x1="130" y1="180" x2="130" y2="205" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- AI Parse Intent -->
+  <rect x="40" y="210" width="180" height="50" rx="10" fill="#7c3aed" filter="url(#shadow)"/>
+  <text x="130" y="233" text-anchor="middle" fill="white" font-size="12" font-weight="600">AI Parse Intent</text>
+  <text x="130" y="249" text-anchor="middle" fill="#ddd6fe" font-size="9">Grok 3 Mini Fast</text>
+
+  <!-- Arrow -->
+  <line x1="130" y1="260" x2="130" y2="285" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Analysis -->
+  <rect x="40" y="290" width="180" height="50" rx="10" fill="#1e40af" filter="url(#shadow)"/>
+  <text x="130" y="312" text-anchor="middle" fill="white" font-size="12" font-weight="600">Codebase Analysis</text>
+  <text x="130" y="330" text-anchor="middle" fill="#bfdbfe" font-size="9">K8s Job - 4 seconds</text>
+
+  <!-- Arrow right to Architect -->
+  <line x1="220" y1="315" x2="270" y2="200" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Architect -->
+  <rect x="275" y="135" width="160" height="70" rx="10" fill="#7c3aed" filter="url(#shadow)"/>
+  <text x="355" y="162" text-anchor="middle" fill="white" font-size="14" font-weight="700">Architect</text>
+  <text x="355" y="180" text-anchor="middle" fill="#ddd6fe" font-size="9">Grok Reasoning</text>
+  <text x="355" y="194" text-anchor="middle" fill="#c4b5fd" font-size="8">Plan + Image + Deploy decision</text>
+
+  <!-- Arrow down -->
+  <line x1="355" y1="205" x2="355" y2="235" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Step Loop -->
+  <rect x="265" y="240" width="310" height="220" rx="12" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="420" y="260" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">STEP LOOP (per file)</text>
+
+  <!-- Executor -->
+  <rect x="285" y="272" width="130" height="55" rx="8" fill="#2563eb" filter="url(#shadow)"/>
+  <text x="350" y="296" text-anchor="middle" fill="white" font-size="13" font-weight="600">Executor</text>
+  <text x="350" y="314" text-anchor="middle" fill="#bfdbfe" font-size="9">Writes Code</text>
+
+  <!-- Arrow right -->
+  <line x1="415" y1="300" x2="430" y2="300" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Reviewer -->
+  <rect x="435" y="272" width="125" height="55" rx="8" fill="#7c3aed" filter="url(#shadow)"/>
+  <text x="498" y="296" text-anchor="middle" fill="white" font-size="13" font-weight="600">Reviewer</text>
+  <text x="498" y="314" text-anchor="middle" fill="#ddd6fe" font-size="9">Approves / Rejects</text>
+
+  <!-- Retry arrow -->
+  <path d="M 435 327 Q 370 370 300 300" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="340" y="360" fill="#f59e0b" font-size="8" font-weight="600">retry ($auto mode)</text>
+
+  <!-- Commit -->
+  <rect x="320" y="380" width="200" height="35" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="420" y="402" text-anchor="middle" fill="#94a3b8" font-size="10">Commit to GitHub Branch</text>
+
+  <!-- Arrow to K8s -->
+  <line x1="575" y1="350" x2="620" y2="200" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Verify -->
+  <rect x="625" y="135" width="185" height="75" rx="10" fill="#059669" filter="url(#shadow)"/>
+  <text x="718" y="160" text-anchor="middle" fill="white" font-size="14" font-weight="700">Verify (DinD)</text>
+  <text x="718" y="178" text-anchor="middle" fill="#a7f3d0" font-size="9">docker compose build + start</text>
+  <text x="718" y="198" text-anchor="middle" fill="#6ee7b7" font-size="8">Health check curl - ~2 min</text>
+
+  <!-- Arrow down -->
+  <line x1="718" y1="210" x2="718" y2="245" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Should Deploy -->
+  <rect x="640" y="250" width="155" height="45" rx="8" fill="#1e293b" stroke="#059669" stroke-width="1.5"/>
+  <text x="718" y="270" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="600">Should Deploy?</text>
+  <text x="718" y="285" text-anchor="middle" fill="#94a3b8" font-size="8">Architect decided</text>
+
+  <!-- YES arrow right -->
+  <line x1="795" y1="272" x2="840" y2="272" stroke="#059669" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="817" y="265" fill="#34d399" font-size="9" font-weight="600">YES</text>
+
+  <!-- Deploy -->
+  <rect x="845" y="245" width="155" height="55" rx="10" fill="#0d9488" filter="url(#shadow)"/>
+  <text x="923" y="268" text-anchor="middle" fill="white" font-size="13" font-weight="700">Deploy</text>
+  <text x="923" y="286" text-anchor="middle" fill="#99f6e4" font-size="9">K8s LoadBalancer Service</text>
+
+  <!-- Arrow down to browser -->
+  <line x1="923" y1="300" x2="923" y2="330" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Browser -->
+  <rect x="855" y="335" width="135" height="50" rx="10" fill="#f97316" filter="url(#shadow)"/>
+  <text x="923" y="358" text-anchor="middle" fill="white" font-size="13" font-weight="700">Browser</text>
+  <text x="923" y="374" text-anchor="middle" fill="#fed7aa" font-size="9">localhost:8080</text>
+
+  <!-- NO arrow to PR -->
+  <line x1="718" y1="295" x2="718" y2="335" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Create PR -->
+  <rect x="645" y="340" width="145" height="42" rx="8" fill="#1e293b" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="718" y="358" text-anchor="middle" fill="#93c5fd" font-size="11" font-weight="600">Create PR</text>
+  <text x="718" y="373" text-anchor="middle" fill="#64748b" font-size="8">GitHub API</text>
+
+  <!-- Arrow down to Discord -->
+  <line x1="718" y1="382" x2="718" y2="415" stroke="#475569" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- Discord Report -->
+  <rect x="645" y="420" width="145" height="42" rx="8" fill="#5865F2" filter="url(#shadow)"/>
+  <text x="718" y="438" text-anchor="middle" fill="white" font-size="11" font-weight="600">Discord Report</text>
+  <text x="718" y="453" text-anchor="middle" fill="#c4c9f2" font-size="8">URL + Status + PR link</text>
+
+  <!-- Also connect Deploy to PR -->
+  <path d="M 855 365 L 790 355" fill="none" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Legend -->
+  <rect x="30" y="540" width="1040" height="160" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+  <text x="550" y="568" text-anchor="middle" fill="#f1f5f9" font-size="14" font-weight="700">How It Works</text>
+
+  <rect x="60" y="588" width="12" height="12" rx="3" fill="#5865F2"/>
+  <text x="80" y="599" fill="#cbd5e1" font-size="11"><tspan font-weight="600">$dev</tspan> — One-shot: Plan, write, review, verify, deploy. No retries on failure.</text>
+
+  <rect x="60" y="612" width="12" height="12" rx="3" fill="#f59e0b"/>
+  <text x="80" y="623" fill="#cbd5e1" font-size="11"><tspan font-weight="600">$auto</tspan> — Self-healing: Retries up to 3x. Feeds errors back to Executor until it passes.</text>
+
+  <rect x="60" y="636" width="12" height="12" rx="3" fill="#7c3aed"/>
+  <text x="80" y="647" fill="#cbd5e1" font-size="11"><tspan font-weight="600">Smart Architect</tspan> — Thinks end-to-end. Scaffolds servers for web content. Picks container images.</text>
+
+  <rect x="60" y="660" width="12" height="12" rx="3" fill="#059669"/>
+  <text x="80" y="671" fill="#cbd5e1" font-size="11"><tspan font-weight="600">DinD Verify</tspan> — Builds from source inside Docker-in-Docker. Full docker compose stack. Health checks.</text>
+
+  <rect x="60" y="684" width="12" height="12" rx="3" fill="#f97316"/>
+  <text x="80" y="695" fill="#cbd5e1" font-size="11"><tspan font-weight="600">Auto Deploy</tspan> — K8s LoadBalancer exposes the server on localhost. Browse it immediately.</text>
+</svg>
